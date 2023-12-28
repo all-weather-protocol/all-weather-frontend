@@ -41,6 +41,10 @@ const items = [
         key: "setting:3",
       },
       {
+        label: <Link href="/dashboard">Dashboard</Link>,
+        key: "setting:4",
+      },
+      {
         label: <Link href="/installment">Installment</Link>,
         key: "installment",
       },

@@ -75,8 +75,8 @@ const columns = [
       <Image
         src={
           chain === "fvm"
-            ? `chainPictures/fvm.png`
-            : `chainPictures/${chain}.svg`
+            ? `/chainPictures/fvm.png`
+            : `/chainPictures/${chain}.svg`
         }
         alt={chain}
         height={20}
