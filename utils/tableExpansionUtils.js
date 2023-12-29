@@ -80,14 +80,14 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
   },
   {
     title: "TVL",
-    key: "tvl",
-    dataIndex: "tvl",
+    key: "tvlUsd",
+    dataIndex: "tvlUsd",
     width: 14,
-    render: (tvl) => {
-      let color = tvl < 500000 ? "volcano" : "green";
+    render: (tvlUsd) => {
+      let color = tvlUsd < 500000 ? "volcano" : "green";
       return (
-        <Tag color={color} key={tvl}>
-          {tvl.toFixed(2)}M
+        <Tag color={color} key={tvlUsd}>
+          {(tvlUsd / 1e6).toFixed(2)}M
         </Tag>
       );
     },

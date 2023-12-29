@@ -1,4 +1,14 @@
-import { Button, Space, Modal, message, Spin, ConfigProvider } from "antd";
+import {
+  Button,
+  Space,
+  Modal,
+  message,
+  Spin,
+  ConfigProvider,
+  Radio,
+} from "antd";
+import { EditOutlined } from "@ant-design/icons";
+import styles from "../../styles/zapInOut.module.scss";
 import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import { portfolioContractAddress, USDT } from "../../utils/oneInch";
@@ -28,6 +38,7 @@ import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToke
 import NumericInput from "./NumberInput";
 import { ethers } from "ethers";
 import { sendDiscordMessage } from "../../utils/discord";
+import SlippageModal from "./components/SlippageModal";
 const MINIMUM_ZAP_IN_AMOUNT = 0.001;
 const MAXIMUM_ZAP_IN_AMOUNT = 1000000;
 const depositSchema = z
@@ -60,6 +71,8 @@ const ZapInButton = () => {
     "0x55d398326f99059fF775485246999027B3197955",
   );
   const [messageApi, contextHolder] = message.useMessage();
+  const [slippage, setSlippage] = useState(1);
+  const [slippageModalOpen, setSlippageModalOpen] = useState(false);
   const { chain } = useNetwork();
 
   const showModal = () => {
@@ -68,6 +81,10 @@ const ZapInButton = () => {
 
   const handleCancel = () => {
     setOpen(false);
+  };
+
+  const showSlippageModal = () => {
+    setSlippageModalOpen(true);
   };
 
   const { data: chosenTokenBalance } = useBalance({
@@ -188,6 +205,7 @@ const ZapInButton = () => {
     approveAmountContract.loading,
     approveAmountContract.data,
     depositStatus,
+    slippage,
   ]);
 
   const handleInputChange = async (eventValue) => {
@@ -259,7 +277,7 @@ const ZapInButton = () => {
       chosenToken,
       USDT,
       portfolioContractAddress,
-      1,
+      slippage,
     );
     const preparedDepositData = _getDepositData(
       amount,
@@ -387,6 +405,12 @@ const ZapInButton = () => {
     <div>
       {contextHolder}
       {modalContent}
+      <SlippageModal
+        slippage={slippage}
+        setSlippage={setSlippage}
+        slippageModalOpen={slippageModalOpen}
+        setSlippageModalOpen={setSlippageModalOpen}
+      />
       <ConfigProvider
         theme={{
           token: {
@@ -416,7 +440,15 @@ const ZapInButton = () => {
             Max
           </Button>
         </Space.Compact>
-        <p style={{ color: "white" }}>Max Slippage: 1%</p>
+        <div className={styles.divSlippage}>
+          <p>Max Slippage: {slippage}%</p>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={showSlippageModal}
+            className={styles.slippageBtn}
+          />
+        </div>
         <Button
           loading={!apiDataReady}
           onClick={handleZapIn} // Added onClick handler

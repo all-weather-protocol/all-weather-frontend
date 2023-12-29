@@ -17,6 +17,7 @@ import {
   selectBefore,
   getAggregatorData,
 } from "../../utils/contractInteractions";
+
 const { ethers } = require("ethers");
 
 const ZapOutButton = () => {
@@ -221,6 +222,7 @@ const ZapOutButton = () => {
           type="primary"
           icon={<DollarOutlined />}
           style={{
+            marginTop: 10,
             display: "block",
           }}
         >
