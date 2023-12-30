@@ -19,34 +19,32 @@ const Dashboard: NextPage = () => {
   };
   const commonColumns = getColumnsForSuggestionsTable(100);
   const [poolData, setPoolData] = useState({ data: [] });
+  const [chosenTokenA, setChosenTokenA] = useState("");
+  const [chosenTokenB, setChosenTokenB] = useState("");
 
-  useEffect(() => {
-    const asyncFetch = () => {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/pools`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Add any other headers you need here
-        },
-        body: JSON.stringify({
-          user_api_key: "test",
-          tokens: [
-            { symbol: "USD", is_stablecoin: true },
-            { symbol: "ETH", is_stablecoin: false },
-          ],
-        }),
+  const searchBetterPools = () => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/pools`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_api_key: "test",
+        tokens: [
+          { symbol: chosenTokenA, is_stablecoin: false },
+          { symbol: chosenTokenB, is_stablecoin: false },
+        ],
+      }),
+    })
+      .then((response) => response.json())
+      .then((json) => {
+        setPoolData(json);
+        console.log("poolData", poolData);
       })
-        .then((response) => response.json())
-        .then((json) => {
-          setPoolData(json);
-          console.log("poolData", poolData);
-        })
-        .catch((error) => {
-          console.log("failed to fetch pool data", error);
-        });
-    };
-    asyncFetch();
-  }, []);
+      .catch((error) => {
+        console.log("failed to fetch pool data", error);
+      });
+  };
 
   return (
     <BasePage>
@@ -67,9 +65,16 @@ const Dashboard: NextPage = () => {
           </div>
         ) : (
           <>
-            <Search placeholder="input your wallet address" />
-            {selectBefore()}
-            {selectBefore()}
+            <Search
+              placeholder="input your wallet address"
+              onSearch={searchBetterPools}
+            />
+            {selectBefore((value: string) => {
+              setChosenTokenA(value);
+            })}
+            {selectBefore((value: string) => {
+              setChosenTokenB(value);
+            })}
             <h2 className="ant-table-title">Search Result:</h2>
             <Table
               columns={commonColumns}
