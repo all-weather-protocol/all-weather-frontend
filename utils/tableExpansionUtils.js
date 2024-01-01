@@ -25,9 +25,10 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     render: (chain) => (
       <Image
         src={
-          chain === "fvm"
-            ? `/chainPictures/fvm.png`
-            : `/chainPictures/${chain.toLowerCase()}.svg`
+          `/chainPicturesWebp/${chain.toLowerCase()}.webp`
+          // chain === "fvm"
+          //   ? `/chainPictures/fvm.png`
+          //   : `/chainPictures/${chain.toLowerCase()}.svg`
         }
         height={20}
         width={20}
@@ -39,9 +40,17 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (text, record) => {
+    render: (project, record) => {
       return record.key !== "1" ? (
-        <span style={{ color: "#ffffff" }}>{text}</span>
+        <>
+          <Image
+            src={`/projectPictures/${project}.webp`}
+            alt={project}
+            height={20}
+            width={20}
+          />
+          <span style={{ color: "#ffffff" }}> {project}</span>
+        </>
       ) : (
         <Button
           type="primary"
