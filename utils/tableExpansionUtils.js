@@ -24,12 +24,7 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     width: 24,
     render: (chain) => (
       <Image
-        src={
-          `/chainPicturesWebp/${chain.toLowerCase()}.webp`
-          // chain === "fvm"
-          //   ? `/chainPictures/fvm.png`
-          //   : `/chainPictures/${chain.toLowerCase()}.svg`
-        }
+        src={`/chainPicturesWebp/${chain.toLowerCase()}.webp`}
         height={20}
         width={20}
       />
@@ -40,23 +35,19 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (project, record) => {
-      return record.key !== "1" ? (
+    render: (pool, record, index) => {
+      return index !== 0 ? (
         <>
           <Image
-            src={`/projectPictures/${project}.webp`}
-            alt={project}
+            src={`/projectPictures/${pool.name}.webp`}
+            alt={pool.name}
             height={20}
             width={20}
           />
-          <span style={{ color: "#ffffff" }}> {project}</span>
+          <span style={{ color: "#ffffff" }}> {pool.name}</span>
         </>
       ) : (
-        <Button
-          type="primary"
-          icon={<UnlockOutlined />}
-          onClick={() => showModal(record)}
-        >
+        <Button type="primary" icon={<UnlockOutlined />}>
           30 Days Free Trial
         </Button>
       );
@@ -77,12 +68,13 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
           {newCoins.map((coin, index) => (
             <Image
               key={index}
-              src={`/tokenPictures/${coin}.png`}
+              src={`/tokenPictures/${coin}.webp`}
               alt={coin}
               height={20}
               width={20}
             />
           ))}
+          <span style={{ color: "#ffffff" }}> {coins.join("-")}</span>
         </div>
       );
     },

@@ -8,5 +8,6 @@
 
 ## Run
 
-1. Chains: `python3 <>.py``
-2. Projects: `python3 project_image_downloader.py`
+1. Chains Pictures: `python3 chain_image_downloader.py`
+2. Projects Pictures: `python3 project_image_downloader.py`
+3. Tokens Pictures: `python3 token_image_downloader.py`

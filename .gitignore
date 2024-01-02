@@ -41,3 +41,6 @@ yarn-error.log*
 
 # Sentry Auth Token
 .sentryclirc
+
+# crawler in public for defillama pictures
+token_dictionary.json
