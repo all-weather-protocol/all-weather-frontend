@@ -5,11 +5,17 @@ import { Input } from "antd";
 const { Search } = Input;
 import useRebalanceSuggestions from "../utils/rebalanceSuggestions.js";
 import { useWindowHeight } from "../utils/chartUtils.js";
-import { getColumnsForSuggestionsTable } from "../utils/tableExpansionUtils";
+import {
+  getColumnsForSuggestionsTable,
+  getExpandableColumnsForSuggestionsTable,
+  expandedRowRender,
+} from "../utils/tableExpansionUtils";
 import { selectBefore } from "../utils/contractInteractions";
 import { useState, useEffect } from "react";
 interface Pool {
   apr: number;
+  tokens: string[];
+  data: object[];
   // ... include other relevant properties as needed
 }
 interface Query {
@@ -20,7 +26,7 @@ interface queriesObj {
   category: string;
   queries: Query[][]; // Array of arrays of Query objects
   setStateMethod: (newValue: any) => void; // Assuming setStateMethod is a function that takes any type as an argument
-  state: Pool[];
+  state: Pool[] | null;
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
@@ -31,22 +37,34 @@ const Dashboard: NextPage = () => {
     minHeight: windowHeight,
     color: "#ffffff",
   };
-  const commonColumns = getColumnsForSuggestionsTable(100);
-  const [poolData, setPoolData] = useState<Pool[]>([]);
-  const [longTermBond, setLongTermBond] = useState<Pool[]>([]);
-  const [intermediateTermBond, setIntermediateTermBond] = useState<Pool[]>([]);
-  const [goldData, setGoldData] = useState<Pool[]>([]);
-  const [commodities, setCommodities] = useState<Pool[]>([]);
-  const [large_cap_us_stocks, set_large_cap_us_stocks] = useState<Pool[]>([]);
-  const [small_cap_us_stocks, set_small_cap_us_stocks] = useState<Pool[]>([]);
+  const commonColumns = getColumnsForSuggestionsTable();
+  const expandableColumns = getExpandableColumnsForSuggestionsTable();
+  const [poolData, setPoolData] = useState<Pool[] | null>(null);
+  const [longTermBond, setLongTermBond] = useState<Pool[] | null>(null);
+  const [intermediateTermBond, setIntermediateTermBond] = useState<
+    Pool[] | null
+  >(null);
+  const [goldData, setGoldData] = useState<Pool[] | null>(null);
+  const [commodities, setCommodities] = useState<Pool[] | null>(null);
+  const [large_cap_us_stocks, set_large_cap_us_stocks] = useState<
+    Pool[] | null
+  >(null);
+  const [small_cap_us_stocks, set_small_cap_us_stocks] = useState<
+    Pool[] | null
+  >(null);
   const [non_us_developed_market_stocks, set_non_us_developed_market_stocks] =
-    useState<Pool[]>([]);
+    useState<Pool[] | null>(null);
   const [non_us_emerging_market_stocks, set_non_us_emerging_market_stocks] =
-    useState<Pool[]>([]);
+    useState<Pool[] | null>(null);
+  const unexpandableCategories = [
+    "ETH (Long Term Bond)",
+    "Stablecoins (Intermediate Bond)",
+    "ETH-Stablecoin LP Tokens (Gold)",
+  ];
   const [chosenTokenA, setChosenTokenA] = useState("");
   const [chosenTokenB, setChosenTokenB] = useState("");
 
-  const topN = 20;
+  const topN = 5;
   const queriesForAllWeather: queriesObj[] = [
     {
       category: "ETH (Long Term Bond)",
@@ -92,10 +110,6 @@ const Dashboard: NextPage = () => {
       queries: [
         [
           { symbol: "eth", is_stablecoin: false },
-          { symbol: "bnb", is_stablecoin: false },
-        ],
-        [
-          { symbol: "eth", is_stablecoin: false },
           { symbol: "op", is_stablecoin: false },
         ],
         [
@@ -127,6 +141,14 @@ const Dashboard: NextPage = () => {
       queries: [
         [
           { symbol: "eth", is_stablecoin: false },
+          { symbol: "cake", is_stablecoin: false },
+        ],
+        [
+          { symbol: "eth", is_stablecoin: false },
+          { symbol: "crv", is_stablecoin: false },
+        ],
+        [
+          { symbol: "eth", is_stablecoin: false },
           { symbol: "pendle", is_stablecoin: false },
         ],
         [
@@ -156,6 +178,25 @@ const Dashboard: NextPage = () => {
       category: "DePIN (Non US Developed Market Stocks)",
       queries: [
         [
+          { symbol: "eth", is_stablecoin: false },
+          { symbol: "ssv", is_stablecoin: false },
+        ],
+        [
+          { symbol: "eth", is_stablecoin: false },
+          { symbol: "tia", is_stablecoin: false },
+        ],
+        [
+          { symbol: "eth", is_stablecoin: false },
+          { symbol: "grt", is_stablecoin: false },
+        ],
+      ],
+      setStateMethod: set_non_us_emerging_market_stocks,
+      state: non_us_emerging_market_stocks,
+    },
+    {
+      category: "Cutting-Edges (Non US Emerging Market Stocks (3%)",
+      queries: [
+        [
           { symbol: "sol", is_stablecoin: false },
           { symbol: "render", is_stablecoin: false },
         ],
@@ -166,17 +207,6 @@ const Dashboard: NextPage = () => {
       ],
       setStateMethod: set_non_us_developed_market_stocks,
       state: non_us_developed_market_stocks,
-    },
-    {
-      category: "Cutting-Edges (Non US Emerging Market Stocks (3%)",
-      queries: [
-        [
-          { symbol: "eth", is_stablecoin: false },
-          { symbol: "ssv", is_stablecoin: false },
-        ],
-      ],
-      setStateMethod: set_non_us_emerging_market_stocks,
-      state: non_us_emerging_market_stocks,
     },
   ];
   useEffect(() => {
@@ -197,16 +227,32 @@ const Dashboard: NextPage = () => {
                 body: JSON.stringify({
                   user_api_key: userApiKey,
                   tokens: query,
+                  top_n: topN,
                 }),
               },
             );
             const json = await response.json();
-            combinedData = combinedData.concat(json.data);
+            if (json.data.length === 0) {
+              continue;
+            }
+            if (unexpandableCategories.includes(categoryMetaData.category)) {
+              combinedData = combinedData.concat(json.data);
+            } else {
+              combinedData.push({
+                tokens: json.data[0].tokens,
+                apr: json.data[0].apr,
+                data: json.data,
+              });
+            }
           }
 
           // Sort and update the state
           combinedData.sort((poolA, poolB) => poolB.apr - poolA.apr);
-          categoryMetaData.setStateMethod(combinedData.slice(0, topN));
+          if (unexpandableCategories.includes(categoryMetaData.category)) {
+            categoryMetaData.setStateMethod(combinedData.slice(0, topN));
+          } else {
+            categoryMetaData.setStateMethod(combinedData);
+          }
         }
       } catch (error) {
         console.log("failed to fetch pool data", error);
@@ -245,20 +291,8 @@ const Dashboard: NextPage = () => {
         <center>
           <h1>Better Pools Search Engine</h1>
         </center>
-        {longTermBond.length === 0 ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "15rem",
-            }}
-          >
-            <Spin size="large" />
-          </div>
-        ) : (
-          <>
-            <Search
+        <>
+          {/* <Search
               placeholder="input your wallet address"
               onSearch={searchBetterPools}
             />
@@ -273,21 +307,47 @@ const Dashboard: NextPage = () => {
               columns={commonColumns}
               dataSource={poolData}
               pagination={false}
-            />
-            {Object.values(queriesForAllWeather).map((categoryMetaData) => (
+            /> */}
+          {Object.values(queriesForAllWeather).map((categoryMetaData) => {
+            return (
               <div key={categoryMetaData.category}>
                 {" "}
                 {/* Make sure to provide a unique key for each item */}
                 <h2 className="ant-table-title">{categoryMetaData.category}</h2>
-                <Table
-                  columns={commonColumns}
-                  dataSource={categoryMetaData.state}
-                  pagination={false}
-                />
+                {categoryMetaData.state === null ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "15rem",
+                    }}
+                  >
+                    <Spin size="large" />
+                  </div>
+                ) : unexpandableCategories.includes(
+                    categoryMetaData.category,
+                  ) ? (
+                  <Table
+                    columns={expandableColumns}
+                    dataSource={categoryMetaData.state}
+                    pagination={false}
+                  />
+                ) : (
+                  <Table
+                    columns={commonColumns}
+                    expandable={{
+                      expandedRowRender,
+                      defaultExpandedRowKeys: ["0"],
+                    }}
+                    dataSource={categoryMetaData.state}
+                    pagination={false}
+                  />
+                )}
               </div>
-            ))}
-          </>
-        )}
+            );
+          })}
+        </>
       </div>
     </BasePage>
   );

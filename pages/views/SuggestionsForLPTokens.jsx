@@ -25,7 +25,7 @@ const useModalState = () => {
 };
 
 const SuggestionsForLPTokens = (props) => {
-  const { wording, topNData, portfolioApr } = props;
+  const { wording, topNData } = props;
   const { isModalOpen, handleModalToggle, modalPosition } = useModalState();
 
   const columnsForParentRows = [
@@ -129,7 +129,7 @@ const SuggestionsForLPTokens = (props) => {
           apr: ((metadata.pool_metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
         };
       });
-      const commonColumns = getColumnsForSuggestionsTable(portfolioApr);
+      const commonColumns = getColumnsForSuggestionsTable();
       const popoverContent = (
         <Table
           columns={[...commonColumns]}

@@ -1,41 +1,33 @@
-import { Tag, Image, Modal, Button } from "antd";
+import {
+  Tag,
+  Image,
+  Modal,
+  Button,
+  Table,
+  Badge,
+  Space,
+  Dropdown,
+  DownOutlined,
+} from "antd";
 import { UnlockOutlined } from "@ant-design/icons";
 
-const showModal = (record) => {
-  Modal.info({
-    title: "Pro Feature",
-    content: (
-      <div>
-        <p>
-          This feature is available for Pro users. Upgrade now to access{" "}
-          {record.proFeature}.
-        </p>
-      </div>
-    ),
-    onOk() {},
-  });
-};
-
-export const getColumnsForSuggestionsTable = (portfolioAPR) => [
-  {
+const columnMapping = {
+  chain: {
     title: "Chain",
     dataIndex: "chain",
     key: "chain",
     width: 24,
     render: (chain) => (
-      <Image
-        src={`/chainPicturesWebp/${chain.toLowerCase()}.webp`}
-        height={20}
-        width={20}
-      />
+      <Image src={`/chainPicturesWebp/${chain}.webp`} height={20} width={20} />
     ),
   },
-  {
+  pool: {
     title: "Pool",
     dataIndex: "pool",
     key: "pool",
     width: 24,
-    render: (pool, record, index) => {
+    render: (pool, _, index) => {
+      console.log("pool", pool);
       return index !== 0 ? (
         <>
           <Image
@@ -45,6 +37,13 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
             width={20}
           />
           <span style={{ color: "#ffffff" }}> {pool.name}</span>
+          {pool.meta ? (
+            <span
+              style={{ color: "#ffffff", fontSize: "smaller", opacity: "0.7" }}
+            >
+              ({pool.meta})
+            </span>
+          ) : null}
         </>
       ) : (
         <Button type="primary" icon={<UnlockOutlined />}>
@@ -53,33 +52,40 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
       );
     },
   },
-  {
-    title: "Coin",
-    dataIndex: "coin",
-    key: "coin",
+  tokens: {
+    title: "Tokens",
+    dataIndex: "tokens",
+    key: "tokens",
     width: 24,
-    render: (coins) => {
-      let newCoins = coins;
-      if (typeof coins === "string") {
-        newCoins = coins.split("-");
+    render: (tokens) => {
+      let newCoins = tokens;
+      if (typeof tokens === "string") {
+        newCoins = tokens.split("-");
       }
       return (
         <div>
-          {newCoins.map((coin, index) => (
+          {newCoins.map((token, index) => (
             <Image
               key={index}
-              src={`/tokenPictures/${coin}.webp`}
-              alt={coin}
+              src={`/tokenPictures/${token}.webp`}
+              alt={token}
               height={20}
               width={20}
             />
           ))}
-          <span style={{ color: "#ffffff" }}> {coins.join("-")}</span>
+          {
+            // backward compatibility
+            Array.isArray(tokens) ? (
+              <span style={{ color: "#ffffff" }}> {tokens.join("-")}</span>
+            ) : (
+              <span style={{ color: "#ffffff" }}> {tokens}</span>
+            )
+          }
         </div>
       );
     },
   },
-  {
+  tvlUsd: {
     title: "TVL",
     key: "tvlUsd",
     dataIndex: "tvlUsd",
@@ -93,13 +99,13 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
       );
     },
   },
-  {
+  apr: {
     title: "APR",
     key: "apr",
     dataIndex: "apr",
     width: 14,
     render: (apr) => {
-      let color = apr < portfolioAPR / 100 ? "volcano" : "green";
+      let color = "green";
       return (
         <>
           <Tag color={color} key={apr}>
@@ -109,4 +115,55 @@ export const getColumnsForSuggestionsTable = (portfolioAPR) => [
       );
     },
   },
+  outerAprColumn: {
+    title: "Highest APR",
+    key: "apr",
+    dataIndex: "apr",
+    width: 14,
+    render: (apr) => {
+      console.log("apr", apr);
+      let color = "green";
+      return (
+        <>
+          <Tag color={color} key={apr}>
+            {(apr * 100).toFixed(2)}%
+          </Tag>
+        </>
+      );
+    },
+  },
+};
+export const getColumnsForSuggestionsTable = () => [
+  columnMapping["tokens"],
+  columnMapping["outerAprColumn"],
 ];
+
+export const getExpandableColumnsForSuggestionsTable = () => [
+  columnMapping["chain"],
+  columnMapping["pool"],
+  columnMapping["tokens"],
+  columnMapping["tvlUsd"],
+  columnMapping["apr"],
+];
+
+export const expandedRowRender = (records) => {
+  const columns = [
+    columnMapping["chain"],
+    columnMapping["pool"],
+    columnMapping["tokens"],
+    columnMapping["tvlUsd"],
+    columnMapping["apr"],
+  ];
+  const data = [];
+  for (let index = 0; index < records.data.length; index++) {
+    data.push({
+      key: index.toString(),
+      chain: records.data[index].chain,
+      pool: records.data[index].pool,
+      tokens: records.data[index].tokens,
+      tvlUsd: records.data[index].tvlUsd,
+      apr: records.data[index].apr,
+    });
+  }
+  return <Table columns={columns} dataSource={data} pagination={false} />;
+};

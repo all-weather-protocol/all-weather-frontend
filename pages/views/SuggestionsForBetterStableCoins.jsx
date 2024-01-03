@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { getColumnsForSuggestionsTable } from "../../utils/tableExpansionUtils";
 
 export default function SuggestionsForBetterStableCoins(props) {
-  const { wording, topNData, portfolioApr } = props;
+  const { wording, topNData } = props;
   const [data, setData] = useState([]);
-  const commonColumns = getColumnsForSuggestionsTable(portfolioApr);
+  const commonColumns = getColumnsForSuggestionsTable();
 
   useEffect(() => {
     if (topNData) {
