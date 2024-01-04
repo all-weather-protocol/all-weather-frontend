@@ -124,7 +124,7 @@ const SuggestionsForLPTokens = (props) => {
           key: idx.toString(),
           chain: metadata.pool_metadata.chain,
           pool: metadata.pool_metadata.project,
-          coin: metadata.pool_metadata.symbol,
+          tokens: metadata.pool_metadata.symbol,
           tvl: metadata.pool_metadata.tvlUsd / 1e6,
           apr: ((metadata.pool_metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
         };

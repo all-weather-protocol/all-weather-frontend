@@ -13,7 +13,7 @@ export default function SuggestionsForBetterStableCoins(props) {
         key: idx,
         chain: metadata.chain,
         pool: metadata.project,
-        coin: metadata.symbol,
+        tokens: metadata.symbol,
         tvl: metadata.tvlUsd / 1e6,
         apr: ((metadata.apy / 100 + 1) ** (1 / 365) - 1) * 365,
       }));
@@ -23,7 +23,7 @@ export default function SuggestionsForBetterStableCoins(props) {
             key: 1,
             chain: "",
             pool: "",
-            coin: (
+            tokens: (
               <span style={{ color: "#ffffff" }}>
                 Your Current Pool is the best one
               </span>
