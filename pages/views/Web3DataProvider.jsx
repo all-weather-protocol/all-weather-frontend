@@ -74,7 +74,7 @@ const Web3DataProvider = ({ children, address }) => {
             netWorthWithCustomLogic:
               process.env.NEXT_PUBLIC_DAVID_PORTFOLIO !== "true"
                 ? (netWorth + 25873).toFixed(2)
-                : (netWorth - 10789).toFixed(2),
+                : (netWorth - 12000).toFixed(2),
             netWorth: netWorth.toFixed(2),
             rebalanceSuggestions,
             totalInterest,

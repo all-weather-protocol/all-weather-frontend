@@ -4,14 +4,14 @@ import {
   Modal,
   Button,
   Table,
-  Badge,
+  Tooltip,
   Space,
   Dropdown,
   DownOutlined,
 } from "antd";
 import { UnlockOutlined } from "@ant-design/icons";
 
-const columnMapping = {
+export const columnMapping = {
   chain: {
     title: "Chain",
     dataIndex: "chain",
@@ -27,7 +27,6 @@ const columnMapping = {
     key: "pool",
     width: 24,
     render: (pool, _, index) => {
-      console.log("pool", pool);
       return index !== 0 ? (
         <>
           <Image
@@ -36,14 +35,20 @@ const columnMapping = {
             height={20}
             width={20}
           />
-          <span style={{ color: "#ffffff" }}> {pool.name}</span>
-          {pool.meta ? (
-            <span
-              style={{ color: "#ffffff", fontSize: "smaller", opacity: "0.7" }}
-            >
-              ({pool.meta})
-            </span>
-          ) : null}
+          <Tooltip title={"pool ID: " + pool.poolID}>
+            <span style={{ color: "#ffffff" }}> {pool.name}</span>
+            {pool.meta ? (
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontSize: "smaller",
+                  opacity: "0.7",
+                }}
+              >
+                ({pool.meta})
+              </span>
+            ) : null}
+          </Tooltip>
         </>
       ) : (
         <Button type="primary" icon={<UnlockOutlined />}>
@@ -121,7 +126,6 @@ const columnMapping = {
     dataIndex: "apr",
     width: 14,
     render: (apr) => {
-      console.log("apr", apr);
       let color = "green";
       return (
         <>
@@ -133,37 +137,15 @@ const columnMapping = {
     },
   },
 };
-export const getColumnsForSuggestionsTable = () => [
+export const getExpandableColumnsForSuggestionsTable = () => [
   columnMapping["tokens"],
   columnMapping["outerAprColumn"],
 ];
 
-export const getExpandableColumnsForSuggestionsTable = () => [
+export const getBasicColumnsForSuggestionsTable = () => [
   columnMapping["chain"],
   columnMapping["pool"],
   columnMapping["tokens"],
   columnMapping["tvlUsd"],
   columnMapping["apr"],
 ];
-
-export const expandedRowRender = (records) => {
-  const columns = [
-    columnMapping["chain"],
-    columnMapping["pool"],
-    columnMapping["tokens"],
-    columnMapping["tvlUsd"],
-    columnMapping["apr"],
-  ];
-  const data = [];
-  for (let index = 0; index < records.data.length; index++) {
-    data.push({
-      key: index.toString(),
-      chain: records.data[index].chain,
-      pool: records.data[index].pool,
-      tokens: records.data[index].tokens,
-      tvlUsd: records.data[index].tvlUsd,
-      apr: records.data[index].apr,
-    });
-  }
-  return <Table columns={columns} dataSource={data} pagination={false} />;
-};
