@@ -109,7 +109,7 @@ const columnMapping = {
       return (
         <>
           <Tag color={color} key={apr}>
-            {(apr * 100).toFixed(2)}%
+            {apr.toFixed(2)}%
           </Tag>
         </>
       );
@@ -126,7 +126,7 @@ const columnMapping = {
       return (
         <>
           <Tag color={color} key={apr}>
-            {(apr * 100).toFixed(2)}%
+            {apr.toFixed(2)}%
           </Tag>
         </>
       );
