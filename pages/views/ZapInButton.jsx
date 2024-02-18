@@ -26,12 +26,11 @@ import {
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import {
-  useContractWrite,
+  useWriteContract,
   useBalance,
-  useContractRead,
+  useReadContract,
   useAccount,
-  useNetwork,
-  useWaitForTransaction,
+  useWaitForTransactionReceipt,
 } from "wagmi";
 
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -73,7 +72,7 @@ const ZapInButton = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const [slippage, setSlippage] = useState(1);
   const [slippageModalOpen, setSlippageModalOpen] = useState(false);
-  const { chain } = useNetwork();
+  const { chain } = useAccount();
 
   const showModal = () => {
     setOpen(true);
@@ -126,63 +125,57 @@ const ZapInButton = () => {
     }
   };
 
-  const useCustomContractWrite = (writeOptions) => {
-    const { data, write } = useContractWrite(writeOptions);
-    const { status } = useWaitForTransaction({ hash: data?.hash });
-
-    return { data, write, status };
-  };
-
   const {
     data: approveData,
-    write: approveWrite,
-    status: approveStatus,
-  } = useCustomContractWrite({
-    address: chosenToken,
-    abi: permanentPortfolioJson.abi,
-    functionName: "approve",
-    onError(error) {
-      messageApi.error({
-        content: `${error.shortMessage}`,
-        duration: 5,
-      });
-    },
-    onSuccess: async (_) => {
-      await sleep(5000);
-      _callbackAfterApprove();
-    },
-  });
+    writeContract: approveWrite,
+    isPending: approveIsPending,
+  } = useWriteContract();
 
   const {
-    data: depositData,
-    write,
-    status: depositStatus,
-  } = useCustomContractWrite({
-    address: portfolioContractAddress,
-    abi: permanentPortfolioJson.abi,
-    functionName: "deposit",
-    onError(error) {
-      if (
-        JSON.stringify(error)
-          .toLocaleLowerCase()
-          .includes("user rejected the request")
-      ) {
-        return;
-      }
-      sendDiscordMessage(address, "handleZapin failed!");
-      messageApi.error({
-        content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
-        duration: 5,
-      });
-      throw error;
-    },
-    onSuccess(data) {
-      sendDiscordMessage(address, "handleZapin succeeded!");
-      setDepositHash(data.hash);
-    },
+    isLoading: approveIsLoading,
+    isSuccess: approveIsSuccess,
+    isError: approveIsError,
+  } = useWaitForTransactionReceipt({ hash: approveData });
+
+  const { data: depositData, writeContract } = useWriteContract();
+  const { status: depositStatus } = useWaitForTransactionReceipt({
+    hash: depositData?.hash,
   });
 
-  const approveAmountContract = useContractRead({
+  // const {
+  //   data: depositData,
+  //   writeContract,
+  //   status: depositStatus,
+  // } = useCustomContractWrite({
+  //   address: portfolioContractAddress,
+  //   abi: permanentPortfolioJson.abi,
+  //   functionName: "deposit",
+  //   onError(error) {
+  //     if (
+  //       JSON.stringify(error)
+  //         .toLocaleLowerCase()
+  //         .includes("user rejected the request")
+  //     ) {
+  //       return;
+  //     }
+  //     sendDiscordMessage(address, "handleZapin failed!");
+  //     messageApi.error({
+  //       content: `${error.shortMessage}. Amout: ${error.args[0].amount}. Increase the deposit amount and try again.`,
+  //       duration: 5,
+  //     });
+  //     throw error;
+  //   },
+  //   onSuccess(data) {
+  //     sendDiscordMessage(address, "handleZapin succeeded!");
+  //     setDepositHash(data.hash);
+  //   },
+  // });
+
+  const {
+    data: approveAmountData,
+    error: approveAmountError,
+    isPending: approveAmounIsPending,
+  } = useReadContract({
     address:
       chosenToken === "0x0000000000000000000000000000000000000000"
         ? fakeAllowanceAddressForBNB
@@ -190,23 +183,17 @@ const ZapInButton = () => {
     abi: permanentPortfolioJson.abi,
     functionName: "allowance",
     args: [address, portfolioContractAddress],
-    watch: true,
-    onError(error) {
-      console.log("allowance Error", error);
-      throw error;
-    },
   });
 
   useEffect(() => {
-    if (approveAmountContract.loading === true) return; // Don't proceed if loading
-    setApproveAmount(approveAmountContract.data);
+    if (approveAmounIsPending) return; // Don't proceed if loading
+    if (approveAmountError) {
+      console.log("allowance Error", approveAmountError.message);
+      throw approveAmountError;
+    }
+    setApproveAmount(approveAmountData);
     if (depositStatus === "success") messageApi.info("Deposit succeeded"); // untill deposit transaction status === "success", then send meessageApi
-  }, [
-    approveAmountContract.loading,
-    approveAmountContract.data,
-    depositStatus,
-    slippage,
-  ]);
+  }, [approveAmounIsPending, approveAmountData, depositStatus, slippage]);
 
   const handleInputChange = async (eventValue) => {
     if (eventValue === "") {
@@ -252,16 +239,32 @@ const ZapInButton = () => {
       return;
     }
     // check the type of amount and the approveAmount
-    if (approveAmountContract.data < amount_) {
+    if (approveAmountData < amount_) {
       setApiDataReady(false);
       if (
         approveWrite &&
         chosenToken != "0x0000000000000000000000000000000000000000"
       ) {
-        approveWrite({
-          args: [portfolioContractAddress, amount.toString()],
-          from: address,
-        });
+        approveWrite(
+          {
+            abi: permanentPortfolioJson.abi,
+            address: chosenToken,
+            functionName: "approve",
+            args: [portfolioContractAddress, amount.toString()],
+          },
+          {
+            onError(error) {
+              messageApi.error({
+                content: `${error}`,
+                duration: 5,
+              });
+            },
+            onSuccess: async (_) => {
+              await sleep(5000);
+              _callbackAfterApprove();
+            },
+          },
+        );
       }
     } else {
       _callbackAfterApprove();
@@ -294,9 +297,11 @@ const ZapInButton = () => {
     });
     setFetchingStatus("success");
     setApiDataReady(true);
-    write({
+    writeContract({
+      abi: permanentPortfolioJson.abi,
+      address: portfolioContractAddress,
+      functionName: "deposit",
       args: [preparedDepositData],
-      from: address,
     });
   };
 
@@ -363,7 +368,15 @@ const ZapInButton = () => {
             marginBottom: "10px",
           }}
         >
-          {statusIcon(approveStatus)}
+          {statusIcon(
+            approveIsPending || approveIsLoading
+              ? "loading"
+              : approveIsSuccess
+              ? "success"
+              : approveIsError
+              ? "error"
+              : "",
+          )}
           <span style={{ marginLeft: 5 }}>Approve</span>
         </div>
         <div

@@ -1,22 +1,13 @@
-import {
-  getDefaultWallets,
-  RainbowKitProvider,
-  ConnectButton,
-  darkTheme,
-} from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { configureChains, createConfig, WagmiConfig, useAccount } from "wagmi";
-import { publicProvider } from "wagmi/providers/public";
-import { bsc, bscTestnet } from "wagmi/chains";
+import { useAccount } from "wagmi";
+
 import { Layout, Affix } from "antd";
 import styles from "../styles/Home.module.css";
-import NavBar from "./views/NavBar.jsx";
 import HeaderInner from "./views/Header";
 import Web3DataProvider from "./views/Web3DataProvider";
-import { MenuOutlined } from "@ant-design/icons";
 import "@flaticon/flaticon-uicons/css/brands/all.css";
 import "@flaticon/flaticon-uicons/css/regular/all.css";
 
@@ -24,24 +15,6 @@ const { Header, Footer, Content } = Layout;
 interface BasePageProps {
   children: React.ReactNode;
 }
-
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [bsc, bscTestnet],
-  [publicProvider()],
-);
-
-const { connectors } = getDefaultWallets({
-  appName: "RainbowKit App",
-  projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
-  chains,
-});
-
-const config = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-});
 
 const BasePage: NextPage<BasePageProps> = ({ children }) => {
   const { address } = useAccount();
