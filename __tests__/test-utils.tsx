@@ -8,14 +8,6 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from "@rainbow-me/rainbowkit";
-<<<<<<< HEAD
-import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { arbitrum, bsc, bscTestnet, goerli } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
-import type { AppProps } from "next/app";
-
-import ThirdPartyPlugin from "../pages/thirdPartyPlugin.jsx";
-=======
 import { WagmiProvider, http } from "wagmi";
 import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
 import {
@@ -24,7 +16,6 @@ import {
   walletConnectWallet,
   rabbyWallet,
 } from "@rainbow-me/rainbowkit/wallets";
->>>>>>> main
 
 const config = getDefaultConfig({
   appName: "RainbowKit demo",
