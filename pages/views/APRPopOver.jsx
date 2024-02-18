@@ -5,8 +5,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { web3Context } from "./Web3DataProvider";
 import ClaimButton from "./ClaimButton";
 import { ethers } from "ethers";
-import { useAccount, useNetwork } from "wagmi";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 import TokenTable from "./components/TokenTable.jsx";
 
 const BigNumber = require("bignumber.js");
@@ -15,7 +14,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const APRPopOver = ({ mode }) => {
   const { connector: isConnected } = useAccount();
-  const { chain } = useNetwork();
+  const { chain } = useAccount();
 
   const [claimableRewards, setClaimableRewards] = useState([]);
   const [aprComposition, setAprComposition] = useState({});

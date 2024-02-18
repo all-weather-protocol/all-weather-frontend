@@ -1,49 +1,63 @@
-// import "../styles/globals.css";
 import "@rainbow-me/rainbowkit/styles.css";
 import "../styles/index.scss";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider, http } from "wagmi";
+import { bscTestnet, bsc, arbitrum } from "wagmi/chains";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig, connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
-  getDefaultWallets,
-  RainbowKitProvider,
-  darkTheme,
-} from "@rainbow-me/rainbowkit";
+  rainbowWallet,
+  metaMaskWallet,
+  walletConnectWallet,
+  rabbyWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import type { AppProps } from "next/app";
-import { configureChains, createConfig, WagmiConfig } from "wagmi";
-import { arbitrum, bsc, bscTestnet, goerli } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
 import ThirdPartyPlugin from "./thirdPartyPlugin.jsx";
 
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [
-    bsc,
-    bscTestnet,
-    arbitrum,
-    ...(process.env.NEXT_PUBLIC_ENABLE_TESTNETS === "true" ? [goerli] : []),
-  ],
-  [publicProvider()],
-);
-
-const { connectors } = getDefaultWallets({
-  appName: "RainbowKit App",
+/* New API that includes Wagmi's createConfig and replaces getDefaultWallets and connectorsForWallets */
+const config = getDefaultConfig({
+  appName: "RainbowKit demo",
   projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? "",
-  chains,
+  chains: [bsc, arbitrum, bscTestnet],
+  transports: {
+    [bsc.id]: http(),
+    [arbitrum.id]: http(),
+    [bscTestnet.id]: http(),
+  },
+  wallets: [
+    {
+      groupName: "Suggested",
+      wallets: [
+        rainbowWallet,
+        metaMaskWallet,
+        walletConnectWallet,
+        rabbyWallet,
+      ],
+    },
+  ],
 });
 
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-});
+const queryClient = new QueryClient();
 
-function MyApp({ Component, pageProps }: AppProps) {
+const App = ({ Component, pageProps }: AppProps) => {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains} theme={darkTheme()}>
-        <ThirdPartyPlugin />
-        <Component {...pageProps} />
-      </RainbowKitProvider>
-    </WagmiConfig>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={darkTheme()}>
+          <ThirdPartyPlugin />
+          <Component {...pageProps} />
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
-}
+};
+// function MyApp({ Component, pageProps }: AppProps) {
+//   return (
+//     <WagmiConfig config={wagmiConfig}>
+//       <RainbowKitProvider chains={chains} theme={darkTheme()}>
+//       </RainbowKitProvider>
+//     </WagmiConfig>
+//   );
+// }
 
-export default MyApp;
+export default App;

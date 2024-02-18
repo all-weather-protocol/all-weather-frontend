@@ -5,7 +5,11 @@ import {
   APX,
 } from "../../utils/oneInch";
 import { DollarOutlined } from "@ant-design/icons";
-import { useContractWrite, useAccount, useWaitForTransaction } from "wagmi";
+import {
+  useContractWrite,
+  useAccount,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { useState, useContext, useEffect } from "react";
 import { web3Context } from "./Web3DataProvider";
 import permanentPortfolioJson from "../../lib/contracts/PermanentPortfolioLPToken.json";
@@ -41,7 +45,7 @@ const ClaimButton = () => {
     },
   });
 
-  const { status } = useWaitForTransaction({ hash: data?.hash });
+  const { status } = useWaitForTransactionReceipt({ hash: data?.hash });
 
   useEffect(() => {
     async function fetchData() {
