@@ -3,7 +3,7 @@ import BasePage from "./basePage.tsx";
 import { Spin, Table, Button, Space, Image } from "antd";
 import { useWindowHeight } from "../utils/chartUtils.js";
 import { investByAAWallet } from "../utils/etherspot.js";
-
+import { arbitrum, type Hex } from "@alchemy/aa-core";
 import {
   getBasicColumnsForSuggestionsTable,
   getExpandableColumnsForSuggestionsTable,
@@ -13,6 +13,12 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import { createWalletClient, custom } from "viem";
+import { mainnet } from "@alchemy/aa-core";
+import { WalletClientSigner } from "@alchemy/aa-core";
+import { createModularAccountAlchemyClient } from "@alchemy/aa-alchemy";
+import { sepolia } from "@alchemy/aa-core";
+import { createWeb3AuthSigner } from "../utils/web3auth";
 
 interface Pools {
   key: string;
@@ -38,7 +44,7 @@ interface queriesObj {
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const { address: walletAddress } = useAccount();
+  const { address: walletAddress, chain } = useAccount();
 
   const windowHeight = useWindowHeight();
   const divBetterPools = {
@@ -200,7 +206,7 @@ const Dashboard: NextPage = () => {
       uniqueTokens.add(query);
     });
   });
-
+  const [client, setClient] = useState<Hex | null>(null);
   useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
@@ -233,6 +239,40 @@ const Dashboard: NextPage = () => {
     };
 
     fetchDefaultPools();
+    const testAlchemyEmbedded = async () => {
+      // const client = createWalletClient({
+      //   chain: arbitrum,
+      //   transport: custom(window.ethereum),
+      // });
+      // const [address] = await client.getAddresses();
+
+      // console.log("client", client, address);
+      // // this can now be used as an signer for a Smart Contract Account
+      // const eoaSigner = new WalletClientSigner(
+      //   client,
+      //   "json-rpc", //signerType
+      // );
+
+      // // Create a smart account client to send user operations from your smart account
+      // const AAclient = await createModularAccountAlchemyClient({
+      //   // get your Alchemy API key at https://dashboard.alchemy.com
+      //   apiKey: "WIcMNRX1L9IpsIwW_o_IUIdhOWwAnFiO",
+      //   chain: arbitrum,
+      //   signer: eoaSigner,
+      // });
+      const provider = await createModularAccountAlchemyClient({
+        apiKey: "WIcMNRX1L9IpsIwW_o_IUIdhOWwAnFiO",
+        chain: arbitrum,
+        signer: await createWeb3AuthSigner(),
+      });
+      (async () => {
+        // Fund your account address with ETH to send for the user operations
+        // (e.g. Get Sepolia ETH at https://sepoliafaucet.com)
+        console.log("AAclient", provider);
+        console.log("Smart Account Address: ", provider.getAddress()); // Log the smart account address
+      })();
+    };
+    testAlchemyEmbedded();
   }, []);
 
   const expandedRowRender = (records: Pools) => {
