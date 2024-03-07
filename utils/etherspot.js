@@ -15,6 +15,7 @@ import EntryPointJson from "../lib/contracts/EntryPoint.json" assert { type: "js
 import CamelotNFTPositionManager from "../lib/contracts/CamelotNFTPositionManager.json" assert { type: "json" };
 import { fetch1InchSwapData } from "./oneInch";
 // import { PrimeSdk, DataUtils, BatchUserOpsRequest } from '@etherspot/prime-sdk';
+import { Web3WalletProvider } from "@etherspot/prime-sdk";
 
 // add/change these values
 const precisionOfInvestAmount = 4;
@@ -42,10 +43,21 @@ const wstEthAddress = "0x5979D7b546E38E414F7E9822514be443A4800529";
 const CamelotNFTPositionManagerAddress =
   "0x00c7f3082833e796A5b3e4Bd59f6642FF44DCD15";
 
-export async function investByAAWallet(investmentAmount, chosenToken) {
+export async function investByAAWallet(
+  investmentAmount,
+  chosenToken,
+  walletClient,
+) {
   console.log("Investing by AA Wallet...");
   console.log("chosenToken", chosenToken);
-  const portfolioHelper = await getPortfolioHelper("AllWeatherPortfolio");
+  const mappedProvider = new Web3WalletProvider(walletClient);
+  // await mappedProvider.refresh();
+  console.log("mappedProvider", mappedProvider);
+
+  const portfolioHelper = await getPortfolioHelper(
+    "AllWeatherPortfolio",
+    mappedProvider,
+  );
   const transactionHash = await portfolioHelper.diversify(
     investmentAmount,
     chosenToken,
@@ -62,21 +74,22 @@ export async function investByAAWallet(investmentAmount, chosenToken) {
   // console.log("\x1b[33m%s\x1b[0m", `EtherspotWallet balances:`, balances);
 }
 
-async function getPortfolioHelper(portfolioName) {
+async function getPortfolioHelper(portfolioName, mappedProvider) {
   let portfolioHelper;
   if (portfolioName === "AllWeatherPortfolio") {
-    portfolioHelper = new AllWeatherPortfolio();
+    portfolioHelper = new AllWeatherPortfolio(mappedProvider);
   }
   await portfolioHelper.initialize();
   return portfolioHelper;
 }
 
 export class AllWeatherPortfolio {
-  constructor() {
+  constructor(mappedProvider) {
     // initializating sdk...
     const customBundlerUrl = "";
     this.primeSdk = new PrimeSdk(
-      { privateKey: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY },
+      mappedProvider,
+      // { privateKey: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY },
       {
         chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID),
         projectKey: "all-weather-dev",
@@ -108,91 +121,91 @@ export class AllWeatherPortfolio {
           },
         ],
       },
-      intermediate_term_bond: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              pendleAddress,
-              wethAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.15 * 2,
-          },
-        ],
-      },
-      commodities: {},
-      gold: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wethAddress,
-              gmxAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.075 * 2,
-          },
-        ],
-      },
-      large_cap_us_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wethAddress,
-              linkAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.09 * 2,
-          },
-        ],
-      },
-      small_cap_us_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              rdntAddress,
-              wethAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.03 * 2,
-          },
-        ],
-      },
-      non_us_developed_market_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              wsolAddress,
-              usdcAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.06 * 2,
-          },
-        ],
-      },
-      non_us_emerging_market_stocks: {
-        42161: [
-          {
-            interface: new CamelotV3(
-              42161,
-              magicAddress,
-              wethAddress,
-              this.primeSdk,
-              this.aaWalletAddress,
-            ),
-            weight: 0.03 * 2,
-          },
-        ],
-      },
+      // intermediate_term_bond: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         pendleAddress,
+      //         wethAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.15 * 2,
+      //     },
+      //   ],
+      // },
+      // commodities: {},
+      // gold: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wethAddress,
+      //         gmxAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.075 * 2,
+      //     },
+      //   ],
+      // },
+      // large_cap_us_stocks: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wethAddress,
+      //         linkAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.09 * 2,
+      //     },
+      //   ],
+      // },
+      // small_cap_us_stocks: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         rdntAddress,
+      //         wethAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.03 * 2,
+      //     },
+      //   ],
+      // },
+      // non_us_developed_market_stocks: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         wsolAddress,
+      //         usdcAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.06 * 2,
+      //     },
+      //   ],
+      // },
+      // non_us_emerging_market_stocks: {
+      //   42161: [
+      //     {
+      //       interface: new CamelotV3(
+      //         42161,
+      //         magicAddress,
+      //         wethAddress,
+      //         this.primeSdk,
+      //         this.aaWalletAddress,
+      //       ),
+      //       weight: 0.03 * 2,
+      //     },
+      //   ],
+      // },
     };
     this._checkTotalWeight(this.strategy);
   }

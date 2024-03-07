@@ -13,6 +13,8 @@ import { useState, useEffect } from "react";
 import RebalanceChart from "./views/RebalanceChart";
 import { useAccount } from "wagmi";
 import TokenDropdownInput from "./views/TokenDropdownInput.jsx";
+import { useWalletClient } from "wagmi";
+import { useEthersProvider } from "../utils/useEthersProvider";
 
 interface Pools {
   key: string;
@@ -38,7 +40,7 @@ interface queriesObj {
 }
 const Dashboard: NextPage = () => {
   const userApiKey = "placeholder";
-  const { address: walletAddress } = useAccount();
+  const { address: walletAddress, chainId } = useAccount();
 
   const windowHeight = useWindowHeight();
   const divBetterPools = {
@@ -200,7 +202,8 @@ const Dashboard: NextPage = () => {
       uniqueTokens.add(query);
     });
   });
-
+  const { data: walletClient } = useWalletClient();
+  const ethersProvider = useEthersProvider();
   useEffect(() => {
     const fetchDefaultPools = async () => {
       try {
@@ -401,7 +404,14 @@ const Dashboard: NextPage = () => {
           onClickCallback={async (
             investmentAmount: number,
             chosenToken: string,
-          ) => await investByAAWallet(String(investmentAmount), chosenToken)}
+            // ) => await investByAAWallet(String(investmentAmount), chosenToken, walletClient)}
+          ) =>
+            await investByAAWallet(
+              String(investmentAmount),
+              chosenToken,
+              ethersProvider,
+            )
+          }
           normalWording="Etherspots"
           loadingWording="Fetching the best route to deposit"
         />
