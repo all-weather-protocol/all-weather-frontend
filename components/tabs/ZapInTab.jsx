@@ -127,8 +127,7 @@ export default function ZapInTab({
       <Button
         type="primary"
         className="w-full my-2"
-        // onClick={() => handleAAWalletAction("zapIn", skipBridge)}
-        onClick={() => handleAAWalletAction("zapIn", true)}
+        onClick={() => handleAAWalletAction("zapIn", skipBridge)}
         disabled={
           Number(investmentAmount) === 0 ||
           Number(investmentAmount) > tokenBalance
