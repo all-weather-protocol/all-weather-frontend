@@ -159,6 +159,9 @@ export default function PopUpModal({
                     currentChain={currentChain}
                     chainStatus={chainStatus}
                     theme="light"
+                    isStarted={Object.values(chainStatus || {}).some(
+                      (status) => status,
+                    )}
                   />
                 </div>
                 <div className="mx-auto flex items-center justify-center rounded-full">
@@ -194,24 +197,29 @@ export default function PopUpModal({
                   <>
                     <div className="flex flex-col items-center gap-4 w-full mt-4">
                       {allChainsComplete === true ? (
-                        <a
-                          href={`https://debank.com/profile/${account?.address}`}
-                          target="_blank"
-                          className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white shadow-md hover:bg-gray-50 transition-colors text-gray-700 border border-gray-200"
-                        >
-                          <Image
-                            src="/projectPictures/debank.webp"
-                            alt="debank"
-                            height={25}
-                            width={25}
-                          />
-                          Check your portfolio on Debank
-                        </a>
+                        <>
+                          <EmailSubscription />
+                          <a
+                            href={`https://debank.com/profile/${account?.address}`}
+                            target="_blank"
+                            className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white/25 shadow-md hover:bg-white/25 transition-colors text-gray-200 border border-gray-100/50"
+                          >
+                            <Image
+                              src="/projectPictures/debank.webp"
+                              alt="debank"
+                              height={25}
+                              width={25}
+                            />
+                            <span className="text-gray-400 font-medium">
+                              Check your portfolio on Debank
+                            </span>
+                          </a>
+                        </>
                       ) : (
                         <button
                           type="button"
                           onClick={() => setOpen(false)}
-                          className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-white shadow-md hover:bg-gray-50 transition-colors text-gray-700 border border-gray-200"
+                          className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors text-white shadow-md"
                         >
                           Step {getCurrentStep()}: {actionName} on
                           <Image
@@ -352,9 +360,6 @@ export default function PopUpModal({
                   </dd>
                 </div>
               </dl>
-              <div className="mt-6 flex gap-4">
-                <EmailSubscription />
-              </div>
             </div>
           </DialogPanel>
         </div>

@@ -454,7 +454,7 @@ export default function IndexOverviews() {
       }).catch((error) => {
         // This catch will handle the rejected promise from onError
         // No need to call handleTransactionError again as it was already called
-        console.log("Transaction failed:", error);
+        console.error("Transaction failed:", error);
       });
     } catch (error) {
       // This handles errors that occur before the transaction is sent

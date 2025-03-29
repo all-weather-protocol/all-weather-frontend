@@ -485,6 +485,25 @@ export class BasePortfolio {
     return totalTxns;
   }
 
+  _calculateDerivative(currentChain, onlyThisChain) {
+    if (!onlyThisChain) return 1;
+    // Calculate total weight for the current chain across all categories
+    const totalWeightOnThisChain = Object.values(this.strategy).reduce(
+      (categorySum, protocolsInThisCategory) => {
+        const chainProtocols = protocolsInThisCategory[currentChain] || [];
+        return (
+          categorySum +
+          chainProtocols.reduce(
+            (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
+            0,
+          )
+        );
+      },
+      0,
+    );
+    return totalWeightOnThisChain === 0 ? 0 : 1 / totalWeightOnThisChain;
+  }
+
   async _processProtocolActions(actionName, actionParams) {
     const currentChain = actionParams.chainMetadata.name
       .toLowerCase()
@@ -634,19 +653,32 @@ export class BasePortfolio {
 
     const processProtocolTxns = async (currentChain) => {
       const protocolPromises = [];
+
+      const derivative = this._calculateDerivative(
+        currentChain,
+        actionParams.onlyThisChain,
+      );
+
+      // Calculate total weight for the current chain across all categories
+      const totalWeightOnThisChain = Object.values(this.strategy).reduce(
+        (categorySum, protocolsInThisCategory) => {
+          const chainProtocols = protocolsInThisCategory[currentChain] || [];
+          return (
+            categorySum +
+            chainProtocols.reduce(
+              (protocolSum, protocol) => protocolSum + (protocol.weight || 0),
+              0,
+            )
+          );
+        },
+        0,
+      );
+
       for (const protocolsInThisCategory of Object.values(this.strategy)) {
         for (const [chain, protocols] of Object.entries(
           protocolsInThisCategory,
         )) {
           if (chain.toLowerCase() !== currentChain) continue;
-
-          const totalWeight = protocols.reduce(
-            (sum, protocol) => sum + (protocol.weight || 0),
-            0,
-          );
-
-          const derivative =
-            actionParams.onlyThisChain === true ? 1 / totalWeight : 1;
 
           // Process all protocols in parallel
           const chainProtocolPromises = protocols.map(async (protocol) => {
@@ -675,39 +707,27 @@ export class BasePortfolio {
     };
 
     const processBridgeTxns = async (currentChain) => {
-      const bridgePromises = [];
+      // Calculate total weights for each chain
+      const chainWeights = this._calculateChainWeights(currentChain);
 
-      for (const protocolsInThisCategory of Object.values(this.strategy)) {
-        const targetChains = Object.entries(protocolsInThisCategory)
-          .filter(([chain]) => chain.toLowerCase() !== currentChain)
-          .map(([chain, protocols]) => ({
-            chain,
-            totalWeight: protocols.reduce(
-              (sum, protocol) => sum + (protocol.weight || 0),
-              0,
-            ),
-          }));
-
-        // Process all bridge transactions in parallel
-        const categoryBridgePromises = targetChains.map(
-          async ({ chain, totalWeight }) => {
-            if (
-              totalWeight === 0 ||
-              (actionParams.zapInAmount * totalWeight) /
-                actionParams.tokenDecimals <
-                1
-            )
-              return [];
-            try {
-              return await actionHandlers["bridge"](chain, totalWeight);
-            } catch (error) {
-              console.error(`Error processing bridge to ${chain}:`, error);
-              return [];
-            }
-          },
-        );
-        bridgePromises.push(...categoryBridgePromises);
-      }
+      // Convert to array format and process bridges
+      const bridgePromises = Object.entries(chainWeights).map(
+        async ([chain, totalWeight]) => {
+          if (
+            totalWeight === 0 ||
+            (actionParams.zapInAmount * totalWeight) /
+              actionParams.tokenDecimals <
+              1
+          )
+            return [];
+          try {
+            return await actionHandlers["bridge"](chain, totalWeight);
+          } catch (error) {
+            console.error(`Error processing bridge to ${chain}:`, error);
+            return [];
+          }
+        },
+      );
 
       // Wait for all bridge transactions to complete
       const results = await Promise.all(bridgePromises);
@@ -1503,5 +1523,23 @@ export class BasePortfolio {
 
   getFlowChartData(actionName, actionParams) {
     return this.flowChartBuilder.buildFlowChart(actionName, actionParams);
+  }
+
+  _calculateChainWeights(currentChain) {
+    return Object.values(this.strategy).reduce(
+      (acc, protocolsInThisCategory) => {
+        Object.entries(protocolsInThisCategory)
+          .filter(([chain]) => chain.toLowerCase() !== currentChain)
+          .forEach(([chain, protocols]) => {
+            if (!acc[chain]) acc[chain] = 0;
+            acc[chain] += protocols.reduce(
+              (sum, protocol) => sum + (protocol.weight || 0),
+              0,
+            );
+          });
+        return acc;
+      },
+      {},
+    );
   }
 }

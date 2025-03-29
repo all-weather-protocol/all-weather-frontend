@@ -8,6 +8,7 @@ const EmailSubscription = () => {
   const [email, setEmail] = useState("");
   const [apiStatus, setApiStatus] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function checkSubscription() {
@@ -37,22 +38,29 @@ const EmailSubscription = () => {
       setApiStatus("Email and address are required!");
       return;
     }
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SDK_API_URL}/subscriptions/email`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SDK_API_URL}/subscriptions/email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            address,
+            email,
+            subscription: true,
+          }),
         },
-        body: JSON.stringify({
-          address,
-          email,
-          subscription: true,
-        }),
-      },
-    );
-    const resp = await response.json();
-    setApiStatus(resp.status);
+      );
+      const resp = await response.json();
+      setApiStatus(resp.status);
+    } catch (error) {
+      setApiStatus("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleEmailChange = (e) => {
@@ -80,9 +88,36 @@ const EmailSubscription = () => {
           <button
             type="button"
             onClick={handleUnlock}
-            className="shrink-0 rounded-lg bg-[#10B981] px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#059669] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#10B981]"
+            disabled={isLoading}
+            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
           >
-            Subscribe to Report
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Subscribing...
+              </>
+            ) : (
+              "Subscribe to Report"
+            )}
           </button>
         </div>
       </form>

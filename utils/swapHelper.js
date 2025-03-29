@@ -139,16 +139,27 @@ async function swap(
   }
 
   // Check slippage for the best quote only
-  const actualPrice =
+  const priceRatio =
     (bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]) /
     (bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]);
-  const slippagePercentage = (1 - actualPrice) * 100;
+  const priceImpactPercentage = (1 - priceRatio) * 100;
+  // NOTE: because of our price timetable have a very high latency, we accept a higher price impact
+  const hardcodedPriceImpactPercentage = 10;
+  console.log(
+    `Input amount: ${bestSwap.normalizedInputAmount} ${fromToken} (${
+      bestSwap.normalizedInputAmount * tokenPricesMappingTable[fromToken]
+    }) , Output amount: ${bestSwap.normalizedOutputAmount} ${toTokenSymbol} (${
+      bestSwap.normalizedOutputAmount * tokenPricesMappingTable[toTokenSymbol]
+    })`,
+    "bestSwap",
+    bestSwap,
+  );
   if (process.env.TEST !== "true") {
     assert(
-      slippagePercentage <= slippage,
-      `Slippage is too high to swap ${fromToken} to ${toTokenSymbol}. Slippage: ${slippagePercentage.toFixed(
+      priceImpactPercentage <= hardcodedPriceImpactPercentage,
+      `Price impact is too high to swap ${fromToken} to ${toTokenSymbol} . Price impact: ${priceImpactPercentage.toFixed(
         2,
-      )}%, Max allowed: ${slippage}%`,
+      )}%, Max allowed: ${hardcodedPriceImpactPercentage}%`,
     );
   }
   // Update progress with final trading loss/gain
@@ -157,7 +168,6 @@ async function swap(
     `${protocolUniqueId}-${fromToken}-${toTokenSymbol}-swap`,
     bestSwap.tradingLoss,
   );
-  console.log("bestSwap", bestSwap);
   return [bestSwap.transactions, bestSwap.minToAmount];
 }
 export default swap;

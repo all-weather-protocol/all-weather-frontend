@@ -55,6 +55,7 @@ export default function RebalanceTab({
         currentChain={currentChain}
         chainStatus={chainStatus}
         theme="dark"
+        isStarted={Object.values(chainStatus || {}).some((status) => status)}
       />
       {rebalancableUsdBalanceDict?.metadata?.rebalanceActionsByChain.every(
         (action) => chainStatus[action.chain],
