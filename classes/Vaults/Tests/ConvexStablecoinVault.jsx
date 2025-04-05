@@ -21,7 +21,7 @@ export class ConvexStablecoinVault extends BasePortfolio {
                     "0xe062e302091f44d7483d9D6e0Da9881a0817E2be",
                   lpTokens: [
                     ["usde", "0x5d3a1ff2b6bab83b63cd9ad0787074081a52ef34", 18],
-                    ["susd", "0xb2f30a7c980f052f02563fb518dcc39e6bf38175", 18],
+                    ["usdx", "0xb2f30a7c980f052f02563fb518dcc39e6bf38175", 18],
                   ],
                   rewards: [
                     {

@@ -52,12 +52,16 @@ describe("Bridge with USDT -> USDC Swap", () => {
     // Ensure we got some transactions
     expect(txns.length).toBeGreaterThanOrEqual(2);
 
-    // Find the bridging transaction
     const bridgeAddress = "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64";
+
     const bridgeIndex = txns.findIndex(
       (txn) => txn.to.toLowerCase() === bridgeAddress.toLowerCase(),
     );
-    expect(bridgeIndex).toBeGreaterThan(-1);
+
+    expect(
+      bridgeIndex,
+      `Bridge address ${bridgeAddress} not found in ${txns.length} transactions`,
+    ).toBeGreaterThan(-1);
 
     // The transaction right before bridging should be the aggregator swap
     const oneInchArbAddress = "0x1111111254EEB25477B68fb85Ed929f73A960582";

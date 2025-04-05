@@ -33,6 +33,7 @@ export const TOKEN_ADDRESS_MAP = {
     base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "op mainnet": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
     op: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    bsc: "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",
   },
   "usdc.e": {
     arbitrum: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
@@ -45,18 +46,21 @@ export const TOKEN_ADDRESS_MAP = {
     base: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
     "op mainnet": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
     op: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+    bsc: "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3",
   },
   weth: {
     arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     base: "0x4200000000000000000000000000000000000006",
     "op mainnet": "0x4200000000000000000000000000000000000006",
     op: "0x4200000000000000000000000000000000000006",
+    bsc: "0x4DB5a66E937A9F4473fA95b1cAF1d1E1D62E29EA",
   },
   usdt: {
     arbitrum: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
     base: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
     "op mainnet": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
     op: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+    bsc: "0x55d398326f99059ff775485246999027b3197955",
   },
 };
 export const PROVIDER = (chain) => {
@@ -69,6 +73,7 @@ export const PROVIDER = (chain) => {
     op: process.env.NEXT_PUBLIC_OPTIMISM_RPC_PROVIDER_URL,
     "op mainnet": process.env.NEXT_PUBLIC_OPTIMISM_RPC_PROVIDER_URL,
     metis: "https://metis-rpc.publicnode.com",
+    bsc: process.env.NEXT_PUBLIC_BSC_RPC_PROVIDER_URL,
     // Add other chains as needed
   };
   const providerUrl = rpcProviders[chain.toLowerCase()];

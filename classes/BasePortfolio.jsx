@@ -637,13 +637,19 @@ export class BasePortfolio {
           inputAmount = swapResult[1]; // Resulting amount after the swap
         }
         const inputAmountBN = ethers.BigNumber.from(inputAmount);
-        const bridge = await getTheBestBridge();
         const targetToken = allowedTokens.includes(
           actionParams.tokenInSymbol.toLowerCase(),
         )
           ? TOKEN_ADDRESS_MAP[actionParams.tokenInSymbol.toLowerCase()][chain]
           : TOKEN_ADDRESS_MAP["usdc"][chain];
-
+        const bridge = await getTheBestBridge(
+          actionParams.account,
+          actionParams.chainMetadata.id,
+          CHAIN_TO_CHAIN_ID[chain],
+          inputToken,
+          targetToken,
+          inputAmountBN,
+        );
         const bridgeTxns = await bridge.getBridgeTxns(
           actionParams.account,
           actionParams.chainMetadata.id,

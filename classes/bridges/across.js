@@ -3,11 +3,12 @@ import { optimism, arbitrum, polygon, base } from "viem/chains";
 import BaseBridge from "./BaseBridge";
 import { prepareContractCall } from "thirdweb";
 import THIRDWEB_CLIENT from "../../utils/thirdweb";
-import { CHAIN_ID_TO_CHAIN, PROVIDER } from "../../utils/general";
+import { CHAIN_ID_TO_CHAIN, PROVIDER, getTokenDecimal } from "../../utils/general";
 import SpokePool from "../../lib/contracts/Across/SpokePool.json";
 import { getContract } from "thirdweb";
 import { ethers } from "ethers";
 import ERC20 from "../../lib/contracts/ERC20.json";
+import { PriceService } from "../TokenPriceService";
 class AcrossBridge extends BaseBridge {
   static spokePoolMapping = {
     arbitrum: "0xe35e9842fceaCA96570B734083f4a58e8F7C5f2A",
@@ -19,16 +20,68 @@ class AcrossBridge extends BaseBridge {
     "op mainnet": "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
     polygon: "0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096",
   };
+
+  static ethAddress = [
+    "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    "0x4200000000000000000000000000000000000006",
+  ]
   constructor() {
     super("across");
     this.sdk = createAcrossClient({
       integratorId: "0xaaff", // 2-byte hex string
       chains: [optimism, arbitrum, polygon, base],
     });
+    this.isInitialized = false;
+    this.feeCosts = null;
   }
+
   async init() {
     return;
   }
+
+  async fetchFeeCosts(
+    account,
+    fromChainId,
+    toChainId,
+    inputToken,
+    targetToken,
+    inputAmount,
+  ) {
+    const route = {
+      originChainId: fromChainId,
+      destinationChainId: toChainId,
+      inputToken: inputToken,
+      outputToken: targetToken,
+    };
+    const quote = await this.sdk.getQuote({
+      route,
+      inputAmount: inputAmount,
+    });
+    const tokenDecimal = await getTokenDecimal(quote.deposit.inputToken, CHAIN_ID_TO_CHAIN[fromChainId].name);
+    const feeInToken = ethers.utils.formatUnits(
+      quote.fees.totalRelayFee.total,
+      tokenDecimal,
+    );
+    if (AcrossBridge.ethAddress.includes(quote.deposit.inputToken)) {
+      const priceService = new PriceService(process.env.NEXT_PUBLIC_API_URL);
+      const chainName = CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase().includes("op") ?
+      "optimism" : CHAIN_ID_TO_CHAIN[fromChainId].name.toLowerCase().replace(" one", "").replace(" mainnet", "");
+      const tokenPrice = await priceService.fetchPrice(
+        quote.deposit.inputToken,
+        {
+          geckoterminal: {
+            chain: chainName,
+            address: quote.deposit.inputToken,
+          },
+        },
+      );
+      this.feeCosts = feeInToken * tokenPrice;
+    } else {
+      this.feeCosts = feeInToken;
+    }
+    return this.feeCosts;
+  }
+
   async customBridgeTxn(
     owner,
     fromChainId,

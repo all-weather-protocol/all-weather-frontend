@@ -483,6 +483,19 @@ export class StablecoinVault extends BaseVault {
             weight: 0.2,
           },
         ],
+        // bsc: [
+        //   {
+        //     interface: new Venus("bsc", 56, ["fdusd"], "single", {
+        //       symbolOfBestTokenToZapInOut: "fdusd",
+        //       zapInOutTokenAddress:
+        //         "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409",
+        //       assetAddress: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409",
+        //       protocolAddress: "0xC4eF4229FEc74Ccfe17B2bdeF7715fAC740BA0ba",
+        //       assetDecimals: 18,
+        //     }),
+        //     weight: 0.1,
+        //   },
+        // ]
       },
     };
     const weightMapping = {
