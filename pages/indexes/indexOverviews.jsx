@@ -478,14 +478,21 @@ export default function IndexOverviews() {
 
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
-  const onChange = (key) => {
-    setTabKey(key);
+  // Handle tab changes
+  const handleTabChange = (tabKey) => {
+    setTabKey(tabKey);
     const newSlippage = determineSlippage({
       portfolioName,
       selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
-      key,
+      key: tabKey,
       actionName,
     });
+    setSlippage(newSlippage);
+  };
+
+  // Handle slippage input changes
+  const handleSlippageChange = (e) => {
+    const newSlippage = e.target.value;
     setSlippage(newSlippage);
   };
 
@@ -965,12 +972,9 @@ export default function IndexOverviews() {
                         value={slippage}
                         buttonStyle="solid"
                         size="small"
-                        onChange={(e) => {
-                          setSlippage(e.target.value);
-                          onChange(e.target.value);
-                        }}
+                        onChange={handleSlippageChange}
                       >
-                        {[0.5, 1, 2, 3].map((slippageValue) => (
+                        {[0.5, 1, 2, 3, 5].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
@@ -1006,7 +1010,7 @@ export default function IndexOverviews() {
                 className="text-white"
                 defaultActiveKey="1"
                 items={items}
-                onChange={onChange}
+                onChange={handleTabChange}
               />
             </ConfigProvider>
 

@@ -11,8 +11,8 @@ const FlowDirectionGraph = dynamic(
   { ssr: false },
 );
 
-// Memoize the formatTradingLoss function
-const formatTradingLoss = React.memo(({ value, nodeId, stepName }) => {
+// Memoize the FormatTradingLoss function
+const FormatTradingLoss = React.memo(({ value, nodeId, stepName }) => {
   if (value === null && nodeId === stepName) return <Spin />;
   if (value === null) return null;
 
@@ -57,7 +57,7 @@ const SwapNode = React.memo(({ nodeData, displayTradingLoss }) => (
     </div>
     {displayTradingLoss !== null && (
       <div>
-        <formatTradingLoss
+        <FormatTradingLoss
           value={displayTradingLoss}
           nodeId={nodeData.id}
           stepName={nodeData.stepName}
@@ -97,7 +97,7 @@ const DepositWithdrawNode = React.memo(({ nodeData, displayTradingLoss, actionNa
     </div>
     {displayTradingLoss !== null && (
       <div>
-        <formatTradingLoss
+        <FormatTradingLoss
           value={displayTradingLoss}
           nodeId={nodeData.id}
           stepName={nodeData.stepName}
@@ -145,8 +145,9 @@ NodeContent.displayName = 'NodeContent';
 SwapNode.displayName = 'SwapNode';
 DepositWithdrawNode.displayName = 'DepositWithdrawNode';
 DefaultNode.displayName = 'DefaultNode';
-formatTradingLoss.displayName = 'formatTradingLoss';
+FormatTradingLoss.displayName = 'FormatTradingLoss';
 
+// Add debug logging to UserFlowNode
 const UserFlowNode = React.memo(({
   nodeData,
   stepName,
@@ -155,15 +156,20 @@ const UserFlowNode = React.memo(({
   setCompletedSteps,
   currentChain,
 }) => {
-  const [nodeState, setNodeState] = useState({
-    isActive: false,
-    tradingLoss: null,
+  // Memoize the node state to prevent unnecessary re-renders
+  const [nodeState, setNodeState] = useState(() => {
+    const initialState = flowChartEventEmitter.getNodeState(nodeData.id);
+    return {
+      isActive: initialState.status === "active",
+      tradingLoss: initialState.tradingLoss,
+    };
   });
 
-  // Memoize the update handler
+  // Memoize the update handler with proper dependencies
   const handleNodeUpdate = useCallback((update) => {
     if (update.nodeId === nodeData.id) {
       setNodeState(prev => {
+        // Only update if there's an actual change
         if (prev.isActive === (update.status === "active") && 
             prev.tradingLoss === update.tradingLoss) {
           return prev;
@@ -183,21 +189,16 @@ const UserFlowNode = React.memo(({
     }
   }, [nodeData.id, setCompletedSteps]);
 
+  // Subscribe to updates only once
   useEffect(() => {
     const unsubscribe = flowChartEventEmitter.subscribe(
       "NODE_UPDATE",
       handleNodeUpdate
     );
-
-    const initialState = flowChartEventEmitter.getNodeState(nodeData.id);
-    setNodeState({
-      isActive: initialState.status === "active",
-      tradingLoss: initialState.tradingLoss,
-    });
-
     return () => unsubscribe();
-  }, [nodeData.id, handleNodeUpdate]);
+  }, [handleNodeUpdate]);
 
+  // Memoize computed values
   const isActiveOrCompleted = useMemo(() => 
     nodeState.isActive ||
     nodeData.id === stepName ||
@@ -220,23 +221,35 @@ const UserFlowNode = React.memo(({
     }`
   , [isActiveOrCompleted]);
 
+  // Memoize the NodeContent props
+  const nodeContentProps = useMemo(() => ({
+    nodeData,
+    displayTradingLoss,
+    stepName,
+  }), [nodeData, displayTradingLoss, stepName]);
+
   return (
     <div
       key={`flow-node-${nodeData.id}`}
       className={nodeClass}
     >
       <div className="user-flow-node-name flex items-center">
-        <NodeContent
-          nodeData={nodeData}
-          displayTradingLoss={displayTradingLoss}
-          stepName={stepName}
-        />
+        <NodeContent {...nodeContentProps} />
       </div>
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  return (
+    prevProps.nodeData.id === nextProps.nodeData.id &&
+    prevProps.stepName === nextProps.stepName &&
+    prevProps.tradingLoss === nextProps.tradingLoss &&
+    prevProps.currentChain === nextProps.currentChain &&
+    prevProps.completedSteps?.has(prevProps.nodeData.id) === 
+    nextProps.completedSteps?.has(nextProps.nodeData.id)
+  );
 });
 
-// Add display name for debugging
 UserFlowNode.displayName = 'UserFlowNode';
 
 // Define getGraphOptions as a regular function
@@ -294,6 +307,7 @@ const getGraphOptions = (
   },
 });
 
+// Add debug logging to main component
 export default function DemoFlowDirectionGraph({
   data,
   stepName,
@@ -303,17 +317,16 @@ export default function DemoFlowDirectionGraph({
   const [completedSteps, setCompletedSteps] = useState(new Set());
 
   // Memoize the options to prevent unnecessary recalculations
-  const options = useMemo(() => 
-    getGraphOptions(
+  const options = useMemo(() => {
+    return getGraphOptions(
       data,
       stepName,
       tradingLoss,
       completedSteps,
       setCompletedSteps,
       currentChain,
-    ),
-    [data, stepName, tradingLoss, completedSteps, currentChain]
-  );
+    );
+  }, [data, stepName, tradingLoss, completedSteps, currentChain]);
 
   return <FlowDirectionGraph {...options} />;
 }
