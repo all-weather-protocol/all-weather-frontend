@@ -402,13 +402,13 @@ export class BasePortfolio {
         type: "NODE_UPDATE",
         nodeId: nodeID,
         status: "active",
-        tradingLoss: tradingLoss || 0
+        tradingLoss: tradingLoss || 0,
       });
 
       // Update trading loss totals if needed
       if (!isNaN(tradingLoss)) {
         actionParams.setTotalTradingLoss(
-          (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss
+          (prevTotalTradingLoss) => prevTotalTradingLoss + tradingLoss,
         );
       } else {
         console.error(`${nodeID}: tradingLoss is not a number: ${tradingLoss}`);

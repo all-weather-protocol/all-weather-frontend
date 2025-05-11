@@ -13,6 +13,7 @@ class FlowChartEventEmitter {
     this.tradingLosses = new Map();
     this.updateQueue = [];
     this.isProcessing = false;
+    this.isClearing = false;
   }
 
   // Event types
@@ -51,6 +52,7 @@ class FlowChartEventEmitter {
 
   // Update node state
   updateNode(nodeId, status, tradingLoss = null) {
+    
     this.nodeStates.set(nodeId, {
       status,
       timestamp: Date.now(),
@@ -65,6 +67,7 @@ class FlowChartEventEmitter {
       status,
       tradingLoss,
     });
+    
   }
 
   // Get node state
@@ -85,23 +88,29 @@ class FlowChartEventEmitter {
 
   // Process the update queue
   async processQueue() {
-    if (this.isProcessing || this.updateQueue.length === 0) return;
-
-    this.isProcessing = true;
-    while (this.updateQueue.length > 0) {
-      const update = this.updateQueue.shift();
-      try {
-        await this.processUpdate(update);
-      } catch (error) {
-        console.error("Error processing update:", error);
-      }
+    if (this.isProcessing || this.updateQueue.length === 0) {
+      return;
     }
-    this.isProcessing = false;
+    
+    this.isProcessing = true;
+    try {
+      while (this.updateQueue.length > 0) {
+        const update = this.updateQueue.shift();
+        await this.processUpdate(update);
+      }
+    } finally {
+      this.isProcessing = false;
+    }
   }
 
   // Process a single update
   async processUpdate(update) {
     const { type, nodeId, status, tradingLoss } = update;
+    // Check if node exists in states
+    if (!this.nodeStates.has(nodeId)) {
+      console.warn(`Node ${nodeId} not found in states, skipping update`);
+      return;
+    }
 
     switch (type) {
       case EVENT_TYPES.NODE_UPDATE:
@@ -109,6 +118,10 @@ class FlowChartEventEmitter {
         break;
       case EVENT_TYPES.BATCH_UPDATE:
         for (const nodeUpdate of status) {
+          if (!this.nodeStates.has(nodeUpdate.nodeId)) {
+            console.warn(`Node ${nodeUpdate.nodeId} not found in states, skipping batch update`);
+            continue;
+          }
           this.updateNode(
             nodeUpdate.nodeId,
             nodeUpdate.status,
@@ -129,13 +142,37 @@ class FlowChartEventEmitter {
     });
   }
 
-  // Clear all queues and states
-  clearAll() {
+  // Clear all queues and states and initialize nodes
+  async clearAll(nodeIds = []) {
+    
+    // First clear everything
     this.updateQueue = [];
     this.isProcessing = false;
     this.nodeStates.clear();
     this.tradingLosses.clear();
-    // Don't clear listeners as they might be needed for the next session
+
+    // Initialize nodes if provided
+    if (nodeIds.length > 0) {
+      // Initialize all nodes as inactive
+      nodeIds.forEach((nodeId) => {
+        this.nodeStates.set(nodeId, {
+          status: "inactive",
+          timestamp: Date.now(),
+        });
+        this.tradingLosses.set(nodeId, null);
+      });
+
+      // Process any queued updates
+      await this.processQueue();
+    }
+
+    // Add a small delay to ensure all operations are complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  // Check if event emitter is ready
+  isReady() {
+    return !this.isProcessing && this.updateQueue.length === 0;
   }
 }
 

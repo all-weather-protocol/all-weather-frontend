@@ -433,12 +433,17 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     try {
+      // Wait for event emitter to be ready
+      while (!flowChartEventEmitter.isReady()) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
       let finalTxns = [];
       await this._handleTransactionProgress(
         updateProgress,
         `${this.uniqueId()}-approve`,
         0,
-        'initial approve'
+        "initial approve",
       );
 
       const [beforeZapInTxns, depositParams] = await this._prepareDeposit(
@@ -465,7 +470,7 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
         `${this.uniqueId()}-deposit`,
         tradingLoss,
-        'deposit'
+        "deposit",
       );
 
       this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
@@ -473,11 +478,11 @@ export default class BaseProtocol extends BaseUniswap {
         updateProgress,
         `${this.uniqueId()}-stake`,
         0,
-        'stake'
+        "stake",
       );
       return finalTxns;
     } catch (error) {
-      console.error('Error in zapIn:', error);
+      console.error("Error in zapIn:", error);
       throw error;
     }
   }
@@ -1437,16 +1442,16 @@ export default class BaseProtocol extends BaseUniswap {
       });
 
       // Keep the existing updateProgress call for backward compatibility
-      if (typeof updateProgress === 'function') {
+      if (typeof updateProgress === "function") {
         updateProgress(nodeId, tradingLoss);
       }
 
       // No need for artificial delay since the event system handles timing
       return true;
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error("Error updating progress:", error);
       // Fallback to direct update if event system fails
-      if (typeof updateProgress === 'function') {
+      if (typeof updateProgress === "function") {
         updateProgress(nodeId, tradingLoss);
       }
       return false;
@@ -1473,17 +1478,26 @@ export default class BaseProtocol extends BaseUniswap {
       if (state && state.status === "active") {
         return true;
       }
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
     return false;
   }
 
   // New method to handle transaction progress
-  async _handleTransactionProgress(updateProgress, nodeId, tradingLoss, operation) {
+  async _handleTransactionProgress(
+    updateProgress,
+    nodeId,
+    tradingLoss,
+    operation,
+  ) {
     try {
       // Update the node state
-      const updateSuccess = await this._updateProgressAndWait(updateProgress, nodeId, tradingLoss);
-      
+      const updateSuccess = await this._updateProgressAndWait(
+        updateProgress,
+        nodeId,
+        tradingLoss,
+      );
+
       // Verify the update was successful
       if (updateSuccess) {
         const isActivated = await this._verifyNodeActivation(nodeId);
@@ -1491,7 +1505,7 @@ export default class BaseProtocol extends BaseUniswap {
           console.warn(`Node ${nodeId} not activated after ${operation}`);
         }
       }
-      
+
       return updateSuccess;
     } catch (error) {
       console.error(`Error in transaction progress for ${operation}:`, error);
