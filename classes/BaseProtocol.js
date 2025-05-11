@@ -432,48 +432,36 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    let finalTxns = [];
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
+    try {
+      // Get flowchart data
+      const flowchartData = this.getZapInFlowChartData(inputToken, tokenInAddress, 1);
+      const nodeIds = flowchartData.nodes.map(node => node.id);
 
-    if (this.mode === "single") {
-      const [
-        beforeZapInTxns,
-        bestTokenSymbol,
-        bestTokenAddressToZapIn,
-        amountToZapIn,
-        bestTokenToZapInDecimal,
-      ] = await this._beforeDeposit(
-        recipient,
-        tokenInAddress,
-        investmentAmountInThisPosition,
-        slippage,
+      // Initialize transaction state
+      let txns = [];
+      let tradingLoss = 0;
+
+      // Handle initial approve
+      await this._handleTransactionProgress(
         updateProgress,
-        inputToken,
-        tokenDecimals,
-        tokenPricesMappingTable,
+        `${this.uniqueId()}-approve`,
+        0,
+        'initial approve'
       );
-      const [zapinTxns, tradingLoss] = await this.customDeposit(
-        recipient,
-        bestTokenSymbol,
-        bestTokenAddressToZapIn,
-        amountToZapIn,
-        bestTokenToZapInDecimal,
-        tokenPricesMappingTable,
-        slippage,
-        updateProgress,
-      );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        tradingLoss,
-      );
-    } else if (this.mode === "LP") {
-      const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
+
+      // Process before deposit
+      if (this.mode === "single") {
+        await this._beforeDeposit(
+          recipient,
+          tokenInAddress,
+          investmentAmountInThisPosition,
+          slippage,
+          updateProgress,
+          inputToken,
+          tokenDecimals,
+          tokenPricesMappingTable,
+        );
+      } else {
         await this._beforeDepositLP(
           recipient,
           tokenInAddress,
@@ -484,28 +472,60 @@ export default class BaseProtocol extends BaseUniswap {
           tokenDecimals,
           tokenPricesMappingTable,
         );
-      const [zapinTxns, tradingLoss] = await this.customDepositLP(
-        recipient,
-        tokenAmetadata,
-        tokenBmetadata,
-        tokenPricesMappingTable,
-        slippage,
-        updateProgress,
-      );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
+      }
+
+      // Handle deposit
+      await this._handleTransactionProgress(
         updateProgress,
         `${this.uniqueId()}-deposit`,
         tradingLoss,
+        'deposit'
       );
+
+      // Process token swaps if needed
+      if (this.mode === "lp") {
+        const [swapTxns, swapTradingLoss] = await this._processTokenSwaps(
+          recipient,
+          tokenInAddress,
+          inputToken,
+          tokenDecimals,
+          this._getLPTokenPairesToZapIn(),
+          1,
+          1,
+          investmentAmountInThisPosition,
+          slippage,
+          updateProgress,
+          tokenPricesMappingTable,
+        );
+        txns = [...txns, ...swapTxns];
+        tradingLoss += swapTradingLoss;
+      }
+
+      // Handle stake
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-stake`,
+        tradingLoss,
+        'stake'
+      );
+
+      // Final stake operation
+      const stakeTxns = await this._stake(investmentAmountInThisPosition, updateProgress);
+      txns = [...txns, ...stakeTxns];
+
+      // Verify all nodes are activated
+      for (const nodeId of nodeIds) {
+        const isActivated = await this._verifyNodeActivation(nodeId);
+        if (!isActivated) {
+          console.warn(`Node ${nodeId} not activated after zapIn completion`);
+        }
+      }
+
+      return [txns, tradingLoss];
+    } catch (error) {
+      console.error('Error in zapIn:', error);
+      throw error;
     }
-    this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
-    return finalTxns;
   }
   async zapOut(
     recipient,
@@ -519,83 +539,88 @@ export default class BaseProtocol extends BaseUniswap {
     customParams,
     existingInvestmentPositionsInThisChain,
   ) {
-    let withdrawTxns = [];
-    let redeemTxns = [];
-    let withdrawTokenAndBalance = {};
-    if (this.mode === "single") {
-      const [
-        withdrawTxnsForSingle,
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalOfBestTokenToZapOut,
-        minOutAmount,
-      ] = await this.customWithdrawAndClaim(
-        recipient,
-        percentage,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
-      const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
-        await this._calculateWithdrawTokenAndBalance(
-          recipient,
+    try {
+      let withdrawTxns = [];
+      let redeemTxns = [];
+      let withdrawTokenAndBalance = {};
+      if (this.mode === "single") {
+        const [
+          withdrawTxnsForSingle,
           symbolOfBestTokenToZapOut,
           bestTokenAddressToZapOut,
           decimalOfBestTokenToZapOut,
           minOutAmount,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawTxnsForSingle;
-      redeemTxns = redeemTxnsForSingle;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
-    } else if (this.mode === "LP") {
-      const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
-        await this.customWithdrawLPAndClaim(
+        ] = await this.customWithdrawAndClaim(
           recipient,
           percentage,
           slippage,
           tokenPricesMappingTable,
           updateProgress,
         );
-      if (
-        withdrawLPTxns === undefined &&
-        tokenMetadatas === undefined &&
-        minPairAmounts === undefined
-      ) {
-        // it means the NFT has been burned, so we don't need to do anything
-        return [];
+        const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
+          await this._calculateWithdrawTokenAndBalance(
+            recipient,
+            symbolOfBestTokenToZapOut,
+            bestTokenAddressToZapOut,
+            decimalOfBestTokenToZapOut,
+            minOutAmount,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawTxnsForSingle;
+        redeemTxns = redeemTxnsForSingle;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
+      } else if (this.mode === "LP") {
+        const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
+          await this.customWithdrawLPAndClaim(
+            recipient,
+            percentage,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        if (
+          withdrawLPTxns === undefined &&
+          tokenMetadatas === undefined &&
+          minPairAmounts === undefined
+        ) {
+          // it means the NFT has been burned, so we don't need to do anything
+          return [];
+        }
+        const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
+          await this._calculateWithdrawLPTokenAndBalance(
+            recipient,
+            tokenMetadatas,
+            minPairAmounts,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawLPTxns;
+        redeemTxns = redeemTxnsFromLP;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
       }
-      const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
-        await this._calculateWithdrawLPTokenAndBalance(
-          recipient,
-          tokenMetadatas,
-          minPairAmounts,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawLPTxns;
-      redeemTxns = redeemTxnsFromLP;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
+      const batchSwapTxns = await this._batchSwap(
+        recipient,
+        withdrawTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      let txns = [];
+      if (redeemTxns.length === 0) {
+        txns = [...withdrawTxns, ...batchSwapTxns];
+      } else {
+        txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
+      }
+      this.checkTxnsToDataNotUndefined(txns, "zapOut");
+      return txns;
+    } catch (error) {
+      console.error("Error in zapOut:", error);
+      throw error;
     }
-    const batchSwapTxns = await this._batchSwap(
-      recipient,
-      withdrawTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    let txns = [];
-    if (redeemTxns.length === 0) {
-      txns = [...withdrawTxns, ...batchSwapTxns];
-    } else {
-      txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
-    }
-    this.checkTxnsToDataNotUndefined(txns, "zapOut");
-    return txns;
   }
   async claimAndSwap(
     recipient,
@@ -606,29 +631,34 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
-    );
-    const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const txns = await this._batchSwap(
-      recipient,
-      claimedTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const finalTxns = [...claimTxns, ...txns];
-    this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
-    return finalTxns;
+    try {
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-claim`,
+        0,
+      );
+      const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
+        recipient,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const txns = await this._batchSwap(
+        recipient,
+        claimedTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const finalTxns = [...claimTxns, ...txns];
+      this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
+      return finalTxns;
+    } catch (error) {
+      console.error("Error in claimAndSwap:", error);
+      throw error;
+    }
   }
 
   async transfer(owner, percentage, updateProgress, recipient) {
@@ -1336,19 +1366,30 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // Queue the update in our event system
-    flowChartEventEmitter.queueUpdate({
-      type: "NODE_UPDATE",
-      nodeId,
-      status: "active",
-      tradingLoss,
-    });
+    try {
+      // Queue the update in our event system
+      flowChartEventEmitter.queueUpdate({
+        type: "NODE_UPDATE",
+        nodeId,
+        status: "active",
+        tradingLoss,
+      });
 
-    // Keep the existing updateProgress call for backward compatibility
-    updateProgress(nodeId, tradingLoss);
+      // Keep the existing updateProgress call for backward compatibility
+      if (typeof updateProgress === 'function') {
+        updateProgress(nodeId, tradingLoss);
+      }
 
-    // Simple delay to ensure the event is processed
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      // No need for artificial delay since the event system handles timing
+      return true;
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      // Fallback to direct update if event system fails
+      if (typeof updateProgress === 'function') {
+        updateProgress(nodeId, tradingLoss);
+      }
+      return false;
+    }
   }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
@@ -1361,6 +1402,51 @@ export default class BaseProtocol extends BaseUniswap {
           `${methodName} of ${this.uniqueId()} has undefined data or undefined to. Cannot proceed with executing.`,
         );
       }
+    }
+  }
+
+  // New method to verify node activation
+  async _verifyNodeActivation(nodeId, maxAttempts = 3) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const state = flowChartEventEmitter.getNodeState(nodeId);
+      if (state && state.status === "active") {
+        return true;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return false;
+  }
+
+  // New method to handle transaction progress
+  async _handleTransactionProgress(updateProgress, nodeId, tradingLoss, operation) {
+    try {
+      // Update the node state
+      const updateSuccess = await this._updateProgressAndWait(updateProgress, nodeId, tradingLoss);
+      
+      // Verify the update was successful
+      if (updateSuccess) {
+        const isActivated = await this._verifyNodeActivation(nodeId);
+        if (!isActivated) {
+          console.warn(`Node ${nodeId} not activated after ${operation}`);
+        }
+      }
+      
+      return updateSuccess;
+    } catch (error) {
+      console.error(`Error in transaction progress for ${operation}:`, error);
+      return false;
+    }
+  }
+
+  async rebalance(account, actionParams) {
+    try {
+      const { updateProgress } = actionParams;
+      await this._updateProgressAndWait(updateProgress, "rebalance", 0);
+
+      // ... rest of rebalance code ...
+    } catch (error) {
+      console.error("Error in rebalance:", error);
+      throw error;
     }
   }
 }

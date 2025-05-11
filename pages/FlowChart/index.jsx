@@ -12,8 +12,7 @@ const FlowDirectionGraph = dynamic(
 );
 
 // Memoize the FormatTradingLoss function
-const FormatTradingLoss = React.memo(({ value, nodeId, stepName }) => {
-  if (value === null && nodeId === stepName) return <Spin />;
+const FormatTradingLoss = React.memo(({ value, nodeId }) => {
   if (value === null) return null;
 
   const absValue = Math.abs(value);
@@ -60,7 +59,6 @@ const SwapNode = React.memo(({ nodeData, displayTradingLoss }) => (
         <FormatTradingLoss
           value={displayTradingLoss}
           nodeId={nodeData.id}
-          stepName={nodeData.stepName}
         />
       </div>
     )}
@@ -100,7 +98,6 @@ const DepositWithdrawNode = React.memo(({ nodeData, displayTradingLoss, actionNa
         <FormatTradingLoss
           value={displayTradingLoss}
           nodeId={nodeData.id}
-          stepName={nodeData.stepName}
         />
       </div>
     )}
@@ -124,7 +121,7 @@ const DefaultNode = React.memo(({ nodeData }) => (
   </>
 ));
 
-const NodeContent = React.memo(({ nodeData, displayTradingLoss, stepName }) => {
+const NodeContent = React.memo(({ nodeData, displayTradingLoss }) => {
   if (nodeData.name.startsWith("Swap")) {
     return <SwapNode nodeData={nodeData} displayTradingLoss={displayTradingLoss} />;
   }
@@ -150,7 +147,6 @@ FormatTradingLoss.displayName = 'FormatTradingLoss';
 // Add debug logging to UserFlowNode
 const UserFlowNode = React.memo(({
   nodeData,
-  stepName,
   tradingLoss,
   completedSteps,
   setCompletedSteps,
@@ -201,19 +197,18 @@ const UserFlowNode = React.memo(({
   // Memoize computed values
   const isActiveOrCompleted = useMemo(() => 
     nodeState.isActive ||
-    nodeData.id === stepName ||
     completedSteps?.has(nodeData.id) ||
     currentChain.toLowerCase().replace(" one", "").replace(" mainnet", "") ===
       nodeData.id
-  , [nodeState.isActive, nodeData.id, stepName, completedSteps, currentChain]);
+  , [nodeState.isActive, nodeData.id, completedSteps, currentChain]);
 
   const displayTradingLoss = useMemo(() => 
     completedSteps?.has(nodeData.id)
       ? nodeState.tradingLoss
-      : nodeData.id === stepName
+      : nodeState.isActive
       ? tradingLoss
       : null
-  , [completedSteps, nodeData.id, nodeState.tradingLoss, stepName, tradingLoss]);
+  , [completedSteps, nodeData.id, nodeState.tradingLoss, nodeState.isActive, tradingLoss]);
 
   const nodeClass = useMemo(() => 
     `user-flow-node bg-white duration-300 flex items-center justify-center ${
@@ -225,8 +220,7 @@ const UserFlowNode = React.memo(({
   const nodeContentProps = useMemo(() => ({
     nodeData,
     displayTradingLoss,
-    stepName,
-  }), [nodeData, displayTradingLoss, stepName]);
+  }), [nodeData, displayTradingLoss]);
 
   return (
     <div
@@ -242,7 +236,6 @@ const UserFlowNode = React.memo(({
   // Custom comparison function for React.memo
   return (
     prevProps.nodeData.id === nextProps.nodeData.id &&
-    prevProps.stepName === nextProps.stepName &&
     prevProps.tradingLoss === nextProps.tradingLoss &&
     prevProps.currentChain === nextProps.currentChain &&
     prevProps.completedSteps?.has(prevProps.nodeData.id) === 
@@ -255,7 +248,6 @@ UserFlowNode.displayName = 'UserFlowNode';
 // Define getGraphOptions as a regular function
 const getGraphOptions = (
   data,
-  stepName,
   tradingLoss,
   completedSteps,
   setCompletedSteps,
@@ -268,7 +260,6 @@ const getGraphOptions = (
       component: (nodeData) => (
         <UserFlowNode
           nodeData={nodeData}
-          stepName={stepName}
           tradingLoss={tradingLoss}
           completedSteps={completedSteps}
           setCompletedSteps={setCompletedSteps}
@@ -312,7 +303,6 @@ const MemoizedFlowDirectionGraph = React.memo(FlowDirectionGraph);
 
 export default function DemoFlowDirectionGraph({
   data,
-  stepName,
   tradingLoss,
   currentChain,
 }) {
@@ -330,7 +320,6 @@ export default function DemoFlowDirectionGraph({
   const nodeRenderer = (nodeData) => (
     <UserFlowNode
       nodeData={nodeData}
-      stepName={stepName}
       tradingLoss={tradingLoss}
       completedSteps={completedSteps}
       setCompletedSteps={handleSetCompletedSteps}

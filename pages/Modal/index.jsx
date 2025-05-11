@@ -66,7 +66,6 @@ const AmountDisplay = ({
 export default function PopUpModal({
   account,
   portfolioHelper,
-  stepName,
   tradingLoss,
   totalTradingLoss,
   open,
@@ -76,6 +75,7 @@ export default function PopUpModal({
   txnLink,
   portfolioAPR,
   actionName,
+  onlyThisChain,
   selectedToken,
   investmentAmount,
   costsCalculated,
@@ -91,8 +91,14 @@ export default function PopUpModal({
   allChainsComplete,
   errorMsg,
   tokenPricesMappingTable,
-  onlyThisChain,
 }) {
+  // Reset event emitter when modal opens
+  React.useEffect(() => {
+    if (open) {
+      flowChartEventEmitter.clearAll();
+    }
+  }, [open]);
+
   const renderStatusIcon = () => {
     if (errorMsg) return <XMarkIcon className="h-5 w-5 text-red-500" />;
     if (!finishedTxn) return <Spin />;
@@ -125,8 +131,6 @@ export default function PopUpModal({
   };
 
   const handleClose = () => {
-    // Clear the FlowChartEventEmitter queue when modal closes
-    flowChartEventEmitter.clearAll();
     setOpen(false);
   };
 
@@ -221,7 +225,6 @@ export default function PopUpModal({
                       },
                       tokenPricesMappingTable,
                     )}
-                    stepName={stepName}
                     tradingLoss={tradingLoss}
                     currentChain={chainId?.name}
                   />
