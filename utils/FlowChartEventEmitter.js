@@ -128,6 +128,15 @@ class FlowChartEventEmitter {
       status: updates,
     });
   }
+
+  // Clear all queues and states
+  clearAll() {
+    this.updateQueue = [];
+    this.isProcessing = false;
+    this.nodeStates.clear();
+    this.tradingLosses.clear();
+    // Don't clear listeners as they might be needed for the next session
+  }
 }
 
 // Create a singleton instance

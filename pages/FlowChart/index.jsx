@@ -11,120 +11,141 @@ const FlowDirectionGraph = dynamic(
   { ssr: false },
 );
 
-const NodeContent = ({ nodeData, displayTradingLoss, stepName }) => {
-  const formatTradingLoss = (value) => {
-    if (value === null && nodeData.id === stepName) return <Spin />;
-    if (value === null) return null;
+// Memoize the formatTradingLoss function
+const formatTradingLoss = React.memo(({ value, nodeId, stepName }) => {
+  if (value === null && nodeId === stepName) return <Spin />;
+  if (value === null) return null;
 
-    const absValue = Math.abs(value);
-    const isNegative = value < 0;
-    const formattedValue =
-      absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
+  const absValue = Math.abs(value);
+  const isNegative = value < 0;
+  const formattedValue =
+    absValue < 0.01 ? "< $0.01" : `$${absValue.toFixed(2)}`;
 
-    return (
-      <span className={`text-sm ${isNegative ? "" : "text-green-500"}`}>
-        {formattedValue}
-      </span>
-    );
-  };
-
-  const renderSwapNode = () => (
-    <>
-      <div className="flex items-center">
-        <Image
-          src="/projectPictures/1inch-network.webp"
-          alt="1inch"
-          className="inline-block"
-          height={20}
-          width={20}
-          loading="lazy"
-          quality={50}
-          unoptimized={true}
-        />
-        <span className="mx-1">Swap</span>
-        <ImageWithFallback
-          token={nodeData.name.split(" to ")[0].replace("Swap ", "")}
-          height={20}
-          width={20}
-        />
-        <span className="mx-1">→</span>
-        <ImageWithFallback
-          token={nodeData.name.split(" to ")[1]}
-          height={20}
-          width={20}
-        />
-      </div>
-      {displayTradingLoss !== null && (
-        <div>{formatTradingLoss(displayTradingLoss)}</div>
-      )}
-    </>
+  return (
+    <span className={`text-sm ${isNegative ? "" : "text-green-500"}`}>
+      {formattedValue}
+    </span>
   );
+});
 
-  const renderDepositWithdrawNode = (actionName) => (
-    <>
-      <div className="flex items-center">
-        <Image
-          src={nodeData.imgSrc}
-          alt={nodeData.name}
-          className="inline-block"
-          height={20}
-          width={20}
-          loading="lazy"
-          quality={50}
-          unoptimized={true}
-        />
-        <span className="mx-1">{actionName}</span>
-        {nodeData.name
-          .replace(actionName, "")
-          .split("-")
-          .map((token, idx) => (
-            <ImageWithFallback
-              key={idx}
-              token={token}
-              height={20}
-              width={20}
-              className="me-1"
-            />
-          ))}
-      </div>
-      {displayTradingLoss !== null && (
-        <div>{formatTradingLoss(displayTradingLoss)}</div>
-      )}
-    </>
-  );
-
-  const renderDefaultNode = () => (
-    <>
+// Memoize the SwapNode component
+const SwapNode = React.memo(({ nodeData, displayTradingLoss }) => (
+  <>
+    <div className="flex items-center">
       <Image
-        src={nodeData.imgSrc}
-        alt={nodeData.name}
-        className="inline-block me-1"
+        src="/projectPictures/1inch-network.webp"
+        alt="1inch"
+        className="inline-block"
         height={20}
         width={20}
         loading="lazy"
         quality={50}
         unoptimized={true}
       />
-      {nodeData.name}
-    </>
-  );
+      <span className="mx-1">Swap</span>
+      <ImageWithFallback
+        token={nodeData.name.split(" to ")[0].replace("Swap ", "")}
+        height={20}
+        width={20}
+      />
+      <span className="mx-1">→</span>
+      <ImageWithFallback
+        token={nodeData.name.split(" to ")[1]}
+        height={20}
+        width={20}
+      />
+    </div>
+    {displayTradingLoss !== null && (
+      <div>
+        <formatTradingLoss
+          value={displayTradingLoss}
+          nodeId={nodeData.id}
+          stepName={nodeData.stepName}
+        />
+      </div>
+    )}
+  </>
+));
 
+// Memoize the DepositWithdrawNode component
+const DepositWithdrawNode = React.memo(({ nodeData, displayTradingLoss, actionName }) => (
+  <>
+    <div className="flex items-center">
+      <Image
+        src={nodeData.imgSrc}
+        alt={nodeData.name}
+        className="inline-block"
+        height={20}
+        width={20}
+        loading="lazy"
+        quality={50}
+        unoptimized={true}
+      />
+      <span className="mx-1">{actionName}</span>
+      {nodeData.name
+        .replace(actionName, "")
+        .split("-")
+        .map((token, idx) => (
+          <ImageWithFallback
+            key={idx}
+            token={token}
+            height={20}
+            width={20}
+            className="me-1"
+          />
+        ))}
+    </div>
+    {displayTradingLoss !== null && (
+      <div>
+        <formatTradingLoss
+          value={displayTradingLoss}
+          nodeId={nodeData.id}
+          stepName={nodeData.stepName}
+        />
+      </div>
+    )}
+  </>
+));
+
+// Memoize the DefaultNode component
+const DefaultNode = React.memo(({ nodeData }) => (
+  <>
+    <Image
+      src={nodeData.imgSrc}
+      alt={nodeData.name}
+      className="inline-block me-1"
+      height={20}
+      width={20}
+      loading="lazy"
+      quality={50}
+      unoptimized={true}
+    />
+    {nodeData.name}
+  </>
+));
+
+const NodeContent = React.memo(({ nodeData, displayTradingLoss, stepName }) => {
   if (nodeData.name.startsWith("Swap")) {
-    return renderSwapNode();
+    return <SwapNode nodeData={nodeData} displayTradingLoss={displayTradingLoss} />;
   }
-  if (
-    nodeData.name.startsWith("Deposit") ||
-    nodeData.name.startsWith("Withdraw")
-  ) {
-    return renderDepositWithdrawNode(
-      nodeData.name.startsWith("Deposit") ? "Deposit" : "Withdraw",
+  if (nodeData.name.startsWith("Deposit") || nodeData.name.startsWith("Withdraw")) {
+    return (
+      <DepositWithdrawNode
+        nodeData={nodeData}
+        displayTradingLoss={displayTradingLoss}
+        actionName={nodeData.name.startsWith("Deposit") ? "Deposit" : "Withdraw"}
+      />
     );
   }
-  return renderDefaultNode();
-};
+  return <DefaultNode nodeData={nodeData} />;
+});
 
-// Memoize the NodeContent component
-const MemoizedNodeContent = React.memo(NodeContent);
+// Add display names for debugging
+NodeContent.displayName = 'NodeContent';
+SwapNode.displayName = 'SwapNode';
+DepositWithdrawNode.displayName = 'DepositWithdrawNode';
+DefaultNode.displayName = 'DefaultNode';
+formatTradingLoss.displayName = 'formatTradingLoss';
 
 const UserFlowNode = React.memo(({
   nodeData,
@@ -205,7 +226,7 @@ const UserFlowNode = React.memo(({
       className={nodeClass}
     >
       <div className="user-flow-node-name flex items-center">
-        <MemoizedNodeContent
+        <NodeContent
           nodeData={nodeData}
           displayTradingLoss={displayTradingLoss}
           stepName={stepName}
