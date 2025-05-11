@@ -12,10 +12,6 @@ import BaseProtocol from "../BaseProtocol.js";
 
 axiosRetry(axios, { retryDelay: axiosRetry.exponentialDelay });
 export class BasePendlePT extends BaseProtocol {
-  static equilibriaFarmAddressMap = {
-    8453: "0x2583A2538272f31e9A15dD12A432B8C96Ab4821d",
-    42161: "0x4D32C8Ff2fACC771eC7Efc70d6A8468bC30C26bF",
-  };
   constructor(chain, chaindId, symbolList, mode, customParams) {
     super(chain, chaindId, symbolList, mode, customParams);
     this.protocolName = "pendle";

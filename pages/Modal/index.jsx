@@ -13,6 +13,8 @@ import { QuestionMarkCircleIcon } from "@heroicons/react/20/solid";
 import { Popover, Spin } from "antd";
 import ActionItem from "../../components/common/ActionItem";
 import { getNextChain } from "../../utils/chainOrder";
+import React from "react";
+import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
 
 const formatAmount = (amount) => {
   if (amount === undefined || amount === null) return <Spin />;
@@ -64,7 +66,6 @@ const AmountDisplay = ({
 export default function PopUpModal({
   account,
   portfolioHelper,
-  stepName,
   tradingLoss,
   totalTradingLoss,
   open,
@@ -74,6 +75,7 @@ export default function PopUpModal({
   txnLink,
   portfolioAPR,
   actionName,
+  onlyThisChain,
   selectedToken,
   investmentAmount,
   costsCalculated,
@@ -89,8 +91,42 @@ export default function PopUpModal({
   allChainsComplete,
   errorMsg,
   tokenPricesMappingTable,
-  onlyThisChain,
 }) {
+  if (!actionName) return null;
+  const flowchartData = portfolioHelper?.getFlowChartData(
+    actionName,
+    {
+      tokenInSymbol:
+        selectedToken?.toLowerCase()?.split("-")[0] === "eth"
+          ? "weth"
+          : selectedToken?.toLowerCase()?.split("-")[0],
+      tokenInAddress: selectedToken?.toLowerCase()?.split("-")[1],
+      outputToken: selectedToken?.toLowerCase()?.split("-")[0],
+      outputTokenAddress: selectedToken?.toLowerCase()?.split("-")[1],
+      rebalancableUsdBalanceDict,
+      usdBalanceDict: rebalancableUsdBalanceDict,
+      chainMetadata,
+      investmentAmount,
+      zapOutAmount,
+      rebalanceAmount,
+      onlyThisChain,
+    },
+    tokenPricesMappingTable,
+  );
+  // Reset event emitter when modal opens
+  React.useEffect(() => {
+    if (open && flowchartData?.nodes) {
+      // Get all node IDs from the flowchart data
+      const allNodeIds = flowchartData.nodes.map((node) => node.id);
+
+      // Clear and initialize all nodes
+      flowChartEventEmitter.clearAll(allNodeIds).then(() => {
+        // Add a small delay to ensure initialization is complete
+        return new Promise((resolve) => setTimeout(resolve, 200));
+      });
+    }
+  }, [open, flowchartData]);
+
   const renderStatusIcon = () => {
     if (errorMsg) return <XMarkIcon className="h-5 w-5 text-red-500" />;
     if (!finishedTxn) return <Spin />;
@@ -122,12 +158,14 @@ export default function PopUpModal({
     };
   };
 
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <Dialog
       open={Boolean(open)} // Ensure boolean conversion
-      onClose={() => {
-        setOpen(false);
-      }}
+      onClose={handleClose}
       className="relative z-10"
     >
       <DialogBackdrop
@@ -143,7 +181,7 @@ export default function PopUpModal({
             <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 <span className="sr-only">Close</span>
@@ -189,33 +227,7 @@ export default function PopUpModal({
               <div className="flex-grow">
                 {finishedTxn === false && actionName !== "" ? (
                   <DemoFlowDirectionGraph
-                    data={portfolioHelper?.getFlowChartData(
-                      actionName,
-                      {
-                        tokenInSymbol:
-                          selectedToken?.toLowerCase()?.split("-")[0] === "eth"
-                            ? "weth"
-                            : selectedToken?.toLowerCase()?.split("-")[0],
-                        tokenInAddress: selectedToken
-                          ?.toLowerCase()
-                          ?.split("-")[1],
-                        outputToken: selectedToken
-                          ?.toLowerCase()
-                          ?.split("-")[0],
-                        outputTokenAddress: selectedToken
-                          ?.toLowerCase()
-                          ?.split("-")[1],
-                        rebalancableUsdBalanceDict,
-                        usdBalanceDict: rebalancableUsdBalanceDict,
-                        chainMetadata,
-                        investmentAmount,
-                        zapOutAmount,
-                        rebalanceAmount,
-                        onlyThisChain,
-                      },
-                      tokenPricesMappingTable,
-                    )}
-                    stepName={stepName}
+                    data={flowchartData}
                     tradingLoss={tradingLoss}
                     currentChain={chainId?.name}
                   />
@@ -225,7 +237,7 @@ export default function PopUpModal({
                       {allChainsComplete === true ? null : (
                         <button
                           type="button"
-                          onClick={() => setOpen(false)}
+                          onClick={handleClose}
                           className="w-full max-w-md flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-colors text-white shadow-md"
                         >
                           Step {getCurrentStep()}: {actionName} on

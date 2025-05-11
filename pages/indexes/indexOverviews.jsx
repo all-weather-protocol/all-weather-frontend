@@ -112,7 +112,6 @@ const cleanupActionParams = (params) => {
     "portfolioHelper",
     "chainMetadata",
     "setPlatformFee",
-    "setStepName",
     "setTotalTradingLoss",
     "setTradingLoss",
   ];
@@ -150,7 +149,6 @@ export default function IndexOverviews() {
   const [tradingLoss, setTradingLoss] = useState(0);
   const [platformFee, setPlatformFee] = useState(0);
   const [costsCalculated, setCostsCalculated] = useState(false);
-  const [stepName, setStepName] = useState("");
   const [slippage, setSlippage] = useState(() =>
     determineSlippage({ portfolioName }),
   );
@@ -223,7 +221,6 @@ export default function IndexOverviews() {
     setPlatformFee(0);
     setTotalTradingLoss(0);
     setTradingLoss(0);
-    setStepName("");
 
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
 
@@ -249,7 +246,6 @@ export default function IndexOverviews() {
       tokenDecimals,
       zapOutPercentage,
       setTradingLoss,
-      setStepName,
       setTotalTradingLoss,
       setPlatformFee,
       slippage,
@@ -478,14 +474,21 @@ export default function IndexOverviews() {
 
   const [nextChainInvestmentAmount, setNextChainInvestmentAmount] = useState(0);
 
-  const onChange = (key) => {
-    setTabKey(key);
+  // Handle tab changes
+  const handleTabChange = (tabKey) => {
+    setTabKey(tabKey);
     const newSlippage = determineSlippage({
       portfolioName,
       selectedTokenSymbol: selectedToken?.toLowerCase()?.split("-")[0],
-      key,
+      key: tabKey,
       actionName,
     });
+    setSlippage(newSlippage);
+  };
+
+  // Handle slippage input changes
+  const handleSlippageChange = (e) => {
+    const newSlippage = e.target.value;
     setSlippage(newSlippage);
   };
 
@@ -782,6 +785,12 @@ export default function IndexOverviews() {
     setRefreshTrigger(Date.now());
   }, [portfolioName, account]);
 
+  const handleClose = () => {
+    setTotalTradingLoss(0);
+    setTradingLoss(0);
+    setOpen(false);
+  };
+
   const tabProps = {
     CHAIN_ID_TO_CHAIN,
     CHAIN_TO_CHAIN_ID,
@@ -843,7 +852,6 @@ export default function IndexOverviews() {
       <PopUpModal
         account={account}
         portfolioHelper={portfolioHelper}
-        stepName={stepName}
         tradingLoss={tradingLoss}
         totalTradingLoss={totalTradingLoss}
         open={open ?? false}
@@ -965,12 +973,9 @@ export default function IndexOverviews() {
                         value={slippage}
                         buttonStyle="solid"
                         size="small"
-                        onChange={(e) => {
-                          setSlippage(e.target.value);
-                          onChange(e.target.value);
-                        }}
+                        onChange={handleSlippageChange}
                       >
-                        {[0.5, 1, 2, 3].map((slippageValue) => (
+                        {[0.5, 1, 2, 3, 5].map((slippageValue) => (
                           <Radio.Button
                             value={slippageValue}
                             key={slippageValue}
@@ -1006,7 +1011,7 @@ export default function IndexOverviews() {
                 className="text-white"
                 defaultActiveKey="1"
                 items={items}
-                onChange={onChange}
+                onChange={handleTabChange}
               />
             </ConfigProvider>
 

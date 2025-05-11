@@ -6,6 +6,8 @@ import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { prepareContractCall, getContract } from "thirdweb";
 import swap from "../utils/swapHelper";
+import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
+
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
@@ -430,13 +432,71 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    let finalTxns = [];
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-approve`,
-      0,
-    );
+    try {
+      // Wait for event emitter to be ready
+      while (!flowChartEventEmitter.isReady()) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
 
+      let finalTxns = [];
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-approve`,
+        0,
+        "initial approve",
+      );
+
+      const [beforeZapInTxns, depositParams] = await this._prepareDeposit(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+
+      const [zapinTxns, tradingLoss] = await this._executeDeposit(
+        recipient,
+        depositParams,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+
+      finalTxns = beforeZapInTxns.concat(zapinTxns);
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-deposit`,
+        tradingLoss,
+        "deposit",
+      );
+
+      this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
+      await this._handleTransactionProgress(
+        updateProgress,
+        `${this.uniqueId()}-stake`,
+        0,
+        "stake",
+      );
+      return finalTxns;
+    } catch (error) {
+      console.error("Error in zapIn:", error);
+      throw error;
+    }
+  }
+
+  async _prepareDeposit(
+    recipient,
+    tokenInAddress,
+    investmentAmountInThisPosition,
+    slippage,
+    updateProgress,
+    inputToken,
+    tokenDecimals,
+    tokenPricesMappingTable,
+  ) {
     if (this.mode === "single") {
       const [
         beforeZapInTxns,
@@ -454,7 +514,61 @@ export default class BaseProtocol extends BaseUniswap {
         tokenDecimals,
         tokenPricesMappingTable,
       );
-      const [zapinTxns, tradingLoss] = await this.customDeposit(
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    } else if (this.mode === "LP") {
+      const [
+        beforeZapInTxns,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+      ] = await this._beforeDepositLP(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    }
+    throw new Error(`Invalid mode: ${this.mode}`);
+  }
+
+  async _executeDeposit(
+    recipient,
+    depositParams,
+    tokenPricesMappingTable,
+    slippage,
+    updateProgress,
+  ) {
+    const {
+      bestTokenSymbol,
+      bestTokenAddressToZapIn,
+      amountToZapIn,
+      bestTokenToZapInDecimal,
+    } = depositParams;
+
+    if (this.mode === "single") {
+      return await this.customDeposit(
         recipient,
         bestTokenSymbol,
         bestTokenAddressToZapIn,
@@ -464,47 +578,21 @@ export default class BaseProtocol extends BaseUniswap {
         slippage,
         updateProgress,
       );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        tradingLoss,
-      );
     } else if (this.mode === "LP") {
-      const [beforeZapInTxns, tokenAmetadata, tokenBmetadata] =
-        await this._beforeDepositLP(
-          recipient,
-          tokenInAddress,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-          inputToken,
-          tokenDecimals,
-          tokenPricesMappingTable,
-        );
-      const [zapinTxns, tradingLoss] = await this.customDepositLP(
+      return await this.customDepositLP(
         recipient,
-        tokenAmetadata,
-        tokenBmetadata,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
         tokenPricesMappingTable,
         slippage,
         updateProgress,
       );
-      finalTxns = beforeZapInTxns.concat(zapinTxns);
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-deposit`,
-        tradingLoss,
-      );
     }
-    this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
-    return finalTxns;
+    throw new Error(`Invalid mode: ${this.mode}`);
   }
+
   async zapOut(
     recipient,
     percentage,
@@ -517,83 +605,88 @@ export default class BaseProtocol extends BaseUniswap {
     customParams,
     existingInvestmentPositionsInThisChain,
   ) {
-    let withdrawTxns = [];
-    let redeemTxns = [];
-    let withdrawTokenAndBalance = {};
-    if (this.mode === "single") {
-      const [
-        withdrawTxnsForSingle,
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalOfBestTokenToZapOut,
-        minOutAmount,
-      ] = await this.customWithdrawAndClaim(
-        recipient,
-        percentage,
-        slippage,
-        tokenPricesMappingTable,
-        updateProgress,
-      );
-      const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
-        await this._calculateWithdrawTokenAndBalance(
-          recipient,
+    try {
+      let withdrawTxns = [];
+      let redeemTxns = [];
+      let withdrawTokenAndBalance = {};
+      if (this.mode === "single") {
+        const [
+          withdrawTxnsForSingle,
           symbolOfBestTokenToZapOut,
           bestTokenAddressToZapOut,
           decimalOfBestTokenToZapOut,
           minOutAmount,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawTxnsForSingle;
-      redeemTxns = redeemTxnsForSingle;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
-    } else if (this.mode === "LP") {
-      const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
-        await this.customWithdrawLPAndClaim(
+        ] = await this.customWithdrawAndClaim(
           recipient,
           percentage,
           slippage,
           tokenPricesMappingTable,
           updateProgress,
         );
-      if (
-        withdrawLPTxns === undefined &&
-        tokenMetadatas === undefined &&
-        minPairAmounts === undefined
-      ) {
-        // it means the NFT has been burned, so we don't need to do anything
-        return [];
+        const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
+          await this._calculateWithdrawTokenAndBalance(
+            recipient,
+            symbolOfBestTokenToZapOut,
+            bestTokenAddressToZapOut,
+            decimalOfBestTokenToZapOut,
+            minOutAmount,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawTxnsForSingle;
+        redeemTxns = redeemTxnsForSingle;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
+      } else if (this.mode === "LP") {
+        const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
+          await this.customWithdrawLPAndClaim(
+            recipient,
+            percentage,
+            slippage,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        if (
+          withdrawLPTxns === undefined &&
+          tokenMetadatas === undefined &&
+          minPairAmounts === undefined
+        ) {
+          // it means the NFT has been burned, so we don't need to do anything
+          return [];
+        }
+        const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
+          await this._calculateWithdrawLPTokenAndBalance(
+            recipient,
+            tokenMetadatas,
+            minPairAmounts,
+            tokenPricesMappingTable,
+            updateProgress,
+          );
+        withdrawTxns = withdrawLPTxns;
+        redeemTxns = redeemTxnsFromLP;
+        withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
       }
-      const [redeemTxnsFromLP, withdrawTokenAndBalanceFromLP] =
-        await this._calculateWithdrawLPTokenAndBalance(
-          recipient,
-          tokenMetadatas,
-          minPairAmounts,
-          tokenPricesMappingTable,
-          updateProgress,
-        );
-      withdrawTxns = withdrawLPTxns;
-      redeemTxns = redeemTxnsFromLP;
-      withdrawTokenAndBalance = withdrawTokenAndBalanceFromLP;
+      const batchSwapTxns = await this._batchSwap(
+        recipient,
+        withdrawTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      let txns = [];
+      if (redeemTxns.length === 0) {
+        txns = [...withdrawTxns, ...batchSwapTxns];
+      } else {
+        txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
+      }
+      this.checkTxnsToDataNotUndefined(txns, "zapOut");
+      return txns;
+    } catch (error) {
+      console.error("Error in zapOut:", error);
+      throw error;
     }
-    const batchSwapTxns = await this._batchSwap(
-      recipient,
-      withdrawTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    let txns = [];
-    if (redeemTxns.length === 0) {
-      txns = [...withdrawTxns, ...batchSwapTxns];
-    } else {
-      txns = [...withdrawTxns, ...redeemTxns, ...batchSwapTxns];
-    }
-    this.checkTxnsToDataNotUndefined(txns, "zapOut");
-    return txns;
   }
   async claimAndSwap(
     recipient,
@@ -604,29 +697,34 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-claim`,
-      0,
-    );
-    const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
-      recipient,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const txns = await this._batchSwap(
-      recipient,
-      claimedTokenAndBalance,
-      outputToken,
-      outputTokenSymbol,
-      outputTokenDecimals,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    const finalTxns = [...claimTxns, ...txns];
-    this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
-    return finalTxns;
+    try {
+      await this._updateProgressAndWait(
+        updateProgress,
+        `${this.uniqueId()}-claim`,
+        0,
+      );
+      const [claimTxns, claimedTokenAndBalance] = await this.customClaim(
+        recipient,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const txns = await this._batchSwap(
+        recipient,
+        claimedTokenAndBalance,
+        outputToken,
+        outputTokenSymbol,
+        outputTokenDecimals,
+        slippage,
+        tokenPricesMappingTable,
+        updateProgress,
+      );
+      const finalTxns = [...claimTxns, ...txns];
+      this.checkTxnsToDataNotUndefined(finalTxns, "claimAndSwap");
+      return finalTxns;
+    } catch (error) {
+      console.error("Error in claimAndSwap:", error);
+      throw error;
+    }
   }
 
   async transfer(owner, percentage, updateProgress, recipient) {
@@ -1334,24 +1432,30 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // First, update the progress and wait for it to complete
-    await new Promise((resolve) => {
-      updateProgress(nodeId, tradingLoss);
-      // Use requestAnimationFrame to ensure the state update is processed
-      requestAnimationFrame(() => {
-        // Add a small delay to ensure React has time to process the update
-        setTimeout(() => {
-          resolve();
-        }, 100);
+    try {
+      // Queue the update in our event system
+      flowChartEventEmitter.queueUpdate({
+        type: "NODE_UPDATE",
+        nodeId,
+        status: "active",
+        tradingLoss,
       });
-    });
 
-    // Additional delay to ensure UI updates are visible
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 400);
-    });
+      // Keep the existing updateProgress call for backward compatibility
+      if (typeof updateProgress === "function") {
+        updateProgress(nodeId, tradingLoss);
+      }
+
+      // No need for artificial delay since the event system handles timing
+      return true;
+    } catch (error) {
+      console.error("Error updating progress:", error);
+      // Fallback to direct update if event system fails
+      if (typeof updateProgress === "function") {
+        updateProgress(nodeId, tradingLoss);
+      }
+      return false;
+    }
   }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline
@@ -1364,6 +1468,60 @@ export default class BaseProtocol extends BaseUniswap {
           `${methodName} of ${this.uniqueId()} has undefined data or undefined to. Cannot proceed with executing.`,
         );
       }
+    }
+  }
+
+  // New method to verify node activation
+  async _verifyNodeActivation(nodeId, maxAttempts = 3) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const state = flowChartEventEmitter.getNodeState(nodeId);
+      if (state && state.status === "active") {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return false;
+  }
+
+  // New method to handle transaction progress
+  async _handleTransactionProgress(
+    updateProgress,
+    nodeId,
+    tradingLoss,
+    operation,
+  ) {
+    try {
+      // Update the node state
+      const updateSuccess = await this._updateProgressAndWait(
+        updateProgress,
+        nodeId,
+        tradingLoss,
+      );
+
+      // Verify the update was successful
+      if (updateSuccess) {
+        const isActivated = await this._verifyNodeActivation(nodeId);
+        if (!isActivated) {
+          console.warn(`Node ${nodeId} not activated after ${operation}`);
+        }
+      }
+
+      return updateSuccess;
+    } catch (error) {
+      console.error(`Error in transaction progress for ${operation}:`, error);
+      return false;
+    }
+  }
+
+  async rebalance(account, actionParams) {
+    try {
+      const { updateProgress } = actionParams;
+      await this._updateProgressAndWait(updateProgress, "rebalance", 0);
+
+      // ... rest of rebalance code ...
+    } catch (error) {
+      console.error("Error in rebalance:", error);
+      throw error;
     }
   }
 }
