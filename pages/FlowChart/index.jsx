@@ -307,26 +307,75 @@ const getGraphOptions = (
   },
 });
 
-// Add debug logging to main component
+// Memoize the FlowDirectionGraph component
+const MemoizedFlowDirectionGraph = React.memo(FlowDirectionGraph);
+
 export default function DemoFlowDirectionGraph({
   data,
   stepName,
   tradingLoss,
   currentChain,
 }) {
+  // Use useRef for completedSteps to prevent unnecessary re-renders
+  const completedStepsRef = useRef(new Set());
   const [completedSteps, setCompletedSteps] = useState(new Set());
 
-  // Memoize the options to prevent unnecessary recalculations
-  const options = useMemo(() => {
-    return getGraphOptions(
-      data,
-      stepName,
-      tradingLoss,
-      completedSteps,
-      setCompletedSteps,
-      currentChain,
-    );
-  }, [data, stepName, tradingLoss, completedSteps, currentChain]);
+  // Memoize the setCompletedSteps callback
+  const handleSetCompletedSteps = useCallback((newSteps) => {
+    setCompletedSteps(newSteps);
+    completedStepsRef.current = newSteps;
+  }, []);
 
-  return <FlowDirectionGraph {...options} />;
+  // Simple node renderer without memoization
+  const nodeRenderer = (nodeData) => (
+    <UserFlowNode
+      nodeData={nodeData}
+      stepName={stepName}
+      tradingLoss={tradingLoss}
+      completedSteps={completedSteps}
+      setCompletedSteps={handleSetCompletedSteps}
+      currentChain={currentChain}
+    />
+  );
+
+  // Only memoize the graph options to prevent unnecessary recalculations of the graph layout
+  const options = useMemo(() => ({
+    autoFit: "view",
+    data,
+    node: {
+      style: {
+        component: nodeRenderer,
+        size: [200, 50],
+      },
+    },
+    edge: {
+      style: {
+        stroke: (d) =>
+          d.data.type === "split"
+            ? "l(0) 0:#F04864 0.5:#7EC2F3 1:#1890FF"
+            : "l(0) 0:#1890FF 0.5:#7EC2F3 1:#F04864",
+        labelText: () => "",
+        labelBackground: true,
+      },
+    },
+    transforms: (prev) => [
+      ...prev,
+      {
+        type: "map-edge-line-width",
+        key: "map-edge-line-width",
+        value: (d) => d.data.ratio,
+        minValue: 0,
+        maxValue: 1,
+        minLineWidth: 1,
+        maxLineWidth: 16,
+      },
+    ],
+    layout: {
+      type: "antv-dagre",
+      nodesep: 10,
+      ranksep: 5,
+    },
+  }), [data]); // Only depend on data since it affects the graph layout
+
+  return <MemoizedFlowDirectionGraph {...options} />;
 }
