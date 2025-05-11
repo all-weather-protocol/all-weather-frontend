@@ -433,15 +433,7 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     try {
-      // Get flowchart data
-      const flowchartData = this.getZapInFlowChartData(inputToken, tokenInAddress, 1);
-      const nodeIds = flowchartData.nodes.map(node => node.id);
-
-      // Initialize transaction state
-      let txns = [];
-      let tradingLoss = 0;
-
-      // Handle initial approve
+      let finalTxns = [];
       await this._handleTransactionProgress(
         updateProgress,
         `${this.uniqueId()}-approve`,
@@ -449,32 +441,26 @@ export default class BaseProtocol extends BaseUniswap {
         'initial approve'
       );
 
-      // Process before deposit
-      if (this.mode === "single") {
-        await this._beforeDeposit(
-          recipient,
-          tokenInAddress,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-          inputToken,
-          tokenDecimals,
-          tokenPricesMappingTable,
-        );
-      } else {
-        await this._beforeDepositLP(
-          recipient,
-          tokenInAddress,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-          inputToken,
-          tokenDecimals,
-          tokenPricesMappingTable,
-        );
-      }
+      const [beforeZapInTxns, depositParams] = await this._prepareDeposit(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
 
-      // Handle deposit
+      const [zapinTxns, tradingLoss] = await this._executeDeposit(
+        recipient,
+        depositParams,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+
+      finalTxns = beforeZapInTxns.concat(zapinTxns);
       await this._handleTransactionProgress(
         updateProgress,
         `${this.uniqueId()}-deposit`,
@@ -482,51 +468,126 @@ export default class BaseProtocol extends BaseUniswap {
         'deposit'
       );
 
-      // Process token swaps if needed
-      if (this.mode === "lp") {
-        const [swapTxns, swapTradingLoss] = await this._processTokenSwaps(
-          recipient,
-          tokenInAddress,
-          inputToken,
-          tokenDecimals,
-          this._getLPTokenPairesToZapIn(),
-          1,
-          1,
-          investmentAmountInThisPosition,
-          slippage,
-          updateProgress,
-          tokenPricesMappingTable,
-        );
-        txns = [...txns, ...swapTxns];
-        tradingLoss += swapTradingLoss;
-      }
-
-      // Handle stake
+      this.checkTxnsToDataNotUndefined(finalTxns, "zapIn");
       await this._handleTransactionProgress(
         updateProgress,
         `${this.uniqueId()}-stake`,
-        tradingLoss,
+        0,
         'stake'
       );
-
-      // Final stake operation
-      const stakeTxns = await this._stake(investmentAmountInThisPosition, updateProgress);
-      txns = [...txns, ...stakeTxns];
-
-      // Verify all nodes are activated
-      for (const nodeId of nodeIds) {
-        const isActivated = await this._verifyNodeActivation(nodeId);
-        if (!isActivated) {
-          console.warn(`Node ${nodeId} not activated after zapIn completion`);
-        }
-      }
-
-      return [txns, tradingLoss];
+      return finalTxns;
     } catch (error) {
       console.error('Error in zapIn:', error);
       throw error;
     }
   }
+
+  async _prepareDeposit(
+    recipient,
+    tokenInAddress,
+    investmentAmountInThisPosition,
+    slippage,
+    updateProgress,
+    inputToken,
+    tokenDecimals,
+    tokenPricesMappingTable,
+  ) {
+    if (this.mode === "single") {
+      const [
+        beforeZapInTxns,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+      ] = await this._beforeDeposit(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    } else if (this.mode === "LP") {
+      const [
+        beforeZapInTxns,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+      ] = await this._beforeDepositLP(
+        recipient,
+        tokenInAddress,
+        investmentAmountInThisPosition,
+        slippage,
+        updateProgress,
+        inputToken,
+        tokenDecimals,
+        tokenPricesMappingTable,
+      );
+      return [
+        beforeZapInTxns,
+        {
+          bestTokenSymbol,
+          bestTokenAddressToZapIn,
+          amountToZapIn,
+          bestTokenToZapInDecimal,
+        },
+      ];
+    }
+    throw new Error(`Invalid mode: ${this.mode}`);
+  }
+
+  async _executeDeposit(
+    recipient,
+    depositParams,
+    tokenPricesMappingTable,
+    slippage,
+    updateProgress,
+  ) {
+    const {
+      bestTokenSymbol,
+      bestTokenAddressToZapIn,
+      amountToZapIn,
+      bestTokenToZapInDecimal,
+    } = depositParams;
+
+    if (this.mode === "single") {
+      return await this.customDeposit(
+        recipient,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+    } else if (this.mode === "LP") {
+      return await this.customDepositLP(
+        recipient,
+        bestTokenSymbol,
+        bestTokenAddressToZapIn,
+        amountToZapIn,
+        bestTokenToZapInDecimal,
+        tokenPricesMappingTable,
+        slippage,
+        updateProgress,
+      );
+    }
+    throw new Error(`Invalid mode: ${this.mode}`);
+  }
+
   async zapOut(
     recipient,
     percentage,
