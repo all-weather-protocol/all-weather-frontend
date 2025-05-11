@@ -6,6 +6,8 @@ import assert from "assert";
 import THIRDWEB_CLIENT from "../utils/thirdweb";
 import { prepareContractCall, getContract } from "thirdweb";
 import swap from "../utils/swapHelper";
+import flowChartEventEmitter from "../utils/FlowChartEventEmitter";
+
 export default class BaseProtocol extends BaseUniswap {
   // arbitrum's Apollox is staked on PancakeSwap
   constructor(chain, chaindId, symbolList, mode, customParams) {
@@ -1334,24 +1336,19 @@ export default class BaseProtocol extends BaseUniswap {
     return contractCall;
   }
   async _updateProgressAndWait(updateProgress, nodeId, tradingLoss) {
-    // First, update the progress and wait for it to complete
-    await new Promise((resolve) => {
-      updateProgress(nodeId, tradingLoss);
-      // Use requestAnimationFrame to ensure the state update is processed
-      requestAnimationFrame(() => {
-        // Add a small delay to ensure React has time to process the update
-        setTimeout(() => {
-          resolve();
-        }, 100);
-      });
+    // Queue the update in our event system
+    flowChartEventEmitter.queueUpdate({
+      type: "NODE_UPDATE",
+      nodeId,
+      status: "active",
+      tradingLoss,
     });
 
-    // Additional delay to ensure UI updates are visible
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 400);
-    });
+    // Keep the existing updateProgress call for backward compatibility
+    updateProgress(nodeId, tradingLoss);
+
+    // Simple delay to ensure the event is processed
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
   getDeadline() {
     return Math.floor(Date.now() / 1000) + 600; // 10 minute deadline

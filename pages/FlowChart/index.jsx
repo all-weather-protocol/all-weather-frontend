@@ -1,8 +1,9 @@
 import dynamic from "next/dynamic";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { Spin } from "antd";
+import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
 
 // Dynamically import FlowDirectionGraph with SSR disabled
 const FlowDirectionGraph = dynamic(
@@ -130,51 +131,38 @@ const UserFlowNode = ({
   setCompletedSteps,
   currentChain,
 }) => {
-  const prevStepNameRef = useRef(stepName);
-  const tradingLossRef = useRef(null);
   const [nodeState, setNodeState] = useState({
     isActive: false,
+    tradingLoss: null,
   });
 
-  React.useEffect(() => {
-    if (stepName !== prevStepNameRef.current) {
-      setCompletedSteps((prev) => {
-        const newSet = new Set([...prev, stepName, prevStepNameRef.current]);
-        return newSet;
-      });
-      prevStepNameRef.current = stepName;
+  useEffect(() => {
+    // Subscribe to node updates
+    const unsubscribe = flowChartEventEmitter.subscribe(
+      "NODE_UPDATE",
+      (update) => {
+        if (update.nodeId === nodeData.id) {
+          setNodeState({
+            isActive: update.status === "active",
+            tradingLoss: update.tradingLoss,
+          });
 
-      if (nodeData.id === stepName) {
-        tradingLossRef.current = tradingLoss;
-        setNodeState({
-          isActive: true,
-        });
-      } else if (completedSteps?.has(nodeData.id)) {
-        setNodeState((prev) => ({
-          ...prev,
-          isActive: false,
-        }));
-      } else {
-        tradingLossRef.current = null;
-        setNodeState((prev) => ({
-          ...prev,
-          isActive: false,
-        }));
-      }
-    } else if (
-      nodeData.id === stepName &&
-      tradingLoss !== tradingLossRef.current
-    ) {
-      tradingLossRef.current = tradingLoss;
-    }
-  }, [
-    stepName,
-    nodeData.id,
-    tradingLoss,
-    setCompletedSteps,
-    completedSteps,
-    currentChain,
-  ]);
+          if (update.status === "active") {
+            setCompletedSteps((prev) => new Set([...prev, nodeData.id]));
+          }
+        }
+      },
+    );
+
+    // Initial state
+    const initialState = flowChartEventEmitter.getNodeState(nodeData.id);
+    setNodeState({
+      isActive: initialState.status === "active",
+      tradingLoss: initialState.tradingLoss,
+    });
+
+    return () => unsubscribe();
+  }, [nodeData.id, setCompletedSteps]);
 
   const isActiveOrCompleted =
     nodeState.isActive ||
@@ -184,7 +172,7 @@ const UserFlowNode = ({
       nodeData.id;
 
   const displayTradingLoss = completedSteps?.has(nodeData.id)
-    ? tradingLossRef.current
+    ? nodeState.tradingLoss
     : nodeData.id === stepName
     ? tradingLoss
     : null;
