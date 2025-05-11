@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
 import { Spin } from "antd";
@@ -123,7 +123,10 @@ const NodeContent = ({ nodeData, displayTradingLoss, stepName }) => {
   return renderDefaultNode();
 };
 
-const UserFlowNode = ({
+// Memoize the NodeContent component
+const MemoizedNodeContent = React.memo(NodeContent);
+
+const UserFlowNode = React.memo(({
   nodeData,
   stepName,
   tradingLoss,
@@ -136,25 +139,35 @@ const UserFlowNode = ({
     tradingLoss: null,
   });
 
+  // Memoize the update handler
+  const handleNodeUpdate = useCallback((update) => {
+    if (update.nodeId === nodeData.id) {
+      setNodeState(prev => {
+        if (prev.isActive === (update.status === "active") && 
+            prev.tradingLoss === update.tradingLoss) {
+          return prev;
+        }
+        return {
+          isActive: update.status === "active",
+          tradingLoss: update.tradingLoss,
+        };
+      });
+
+      if (update.status === "active") {
+        setCompletedSteps(prev => {
+          if (prev.has(nodeData.id)) return prev;
+          return new Set([...prev, nodeData.id]);
+        });
+      }
+    }
+  }, [nodeData.id, setCompletedSteps]);
+
   useEffect(() => {
-    // Subscribe to node updates
     const unsubscribe = flowChartEventEmitter.subscribe(
       "NODE_UPDATE",
-      (update) => {
-        if (update.nodeId === nodeData.id) {
-          setNodeState({
-            isActive: update.status === "active",
-            tradingLoss: update.tradingLoss,
-          });
-
-          if (update.status === "active") {
-            setCompletedSteps((prev) => new Set([...prev, nodeData.id]));
-          }
-        }
-      },
+      handleNodeUpdate
     );
 
-    // Initial state
     const initialState = flowChartEventEmitter.getNodeState(nodeData.id);
     setNodeState({
       isActive: initialState.status === "active",
@@ -162,30 +175,37 @@ const UserFlowNode = ({
     });
 
     return () => unsubscribe();
-  }, [nodeData.id, setCompletedSteps]);
+  }, [nodeData.id, handleNodeUpdate]);
 
-  const isActiveOrCompleted =
+  const isActiveOrCompleted = useMemo(() => 
     nodeState.isActive ||
     nodeData.id === stepName ||
     completedSteps?.has(nodeData.id) ||
     currentChain.toLowerCase().replace(" one", "").replace(" mainnet", "") ===
-      nodeData.id;
+      nodeData.id
+  , [nodeState.isActive, nodeData.id, stepName, completedSteps, currentChain]);
 
-  const displayTradingLoss = completedSteps?.has(nodeData.id)
-    ? nodeState.tradingLoss
-    : nodeData.id === stepName
-    ? tradingLoss
-    : null;
+  const displayTradingLoss = useMemo(() => 
+    completedSteps?.has(nodeData.id)
+      ? nodeState.tradingLoss
+      : nodeData.id === stepName
+      ? tradingLoss
+      : null
+  , [completedSteps, nodeData.id, nodeState.tradingLoss, stepName, tradingLoss]);
+
+  const nodeClass = useMemo(() => 
+    `user-flow-node bg-white duration-300 flex items-center justify-center ${
+      isActiveOrCompleted ? "opacity-100" : "opacity-40"
+    }`
+  , [isActiveOrCompleted]);
 
   return (
     <div
       key={`flow-node-${nodeData.id}`}
-      className={`user-flow-node bg-white duration-300 flex items-center justify-center ${
-        isActiveOrCompleted ? "opacity-100" : "opacity-40"
-      }`}
+      className={nodeClass}
     >
       <div className="user-flow-node-name flex items-center">
-        <NodeContent
+        <MemoizedNodeContent
           nodeData={nodeData}
           displayTradingLoss={displayTradingLoss}
           stepName={stepName}
@@ -193,7 +213,10 @@ const UserFlowNode = ({
       </div>
     </div>
   );
-};
+});
+
+// Add display name for debugging
+UserFlowNode.displayName = 'UserFlowNode';
 
 const getGraphOptions = (
   data,
