@@ -714,13 +714,16 @@ export class BasePortfolio {
       // Convert to array format and process bridges
       const bridgePromises = Object.entries(chainWeights).map(
         async ([chain, totalWeight]) => {
-          if (
-            totalWeight === 0 ||
-            (actionParams.zapInAmount * totalWeight) /
-              Math.pow(10, actionParams.tokenDecimals) <
-              1
-          )
+          const bridgeUsd =
+            ((actionParams.zapInAmount * totalWeight) /
+              Math.pow(10, actionParams.tokenDecimals)) *
+            actionParams.tokenPricesMappingTable[actionParams.tokenInSymbol];
+          if (totalWeight === 0 || bridgeUsd < 1) {
+            console.warn(
+              `Skipping bridge to ${chain} because of low amount: ${bridgeUsd} USD`,
+            );
             return [];
+          }
           try {
             return await actionHandlers["bridge"](chain, totalWeight);
           } catch (error) {
@@ -734,7 +737,6 @@ export class BasePortfolio {
       const results = await Promise.all(bridgePromises);
       return results.flat().filter(Boolean);
     };
-
     // Execute protocol and bridge transactions in parallel
     const [protocolTxns, bridgeTxns] = await Promise.all([
       processProtocolTxns(currentChain),

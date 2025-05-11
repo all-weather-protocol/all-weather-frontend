@@ -52,7 +52,6 @@ class FlowChartEventEmitter {
 
   // Update node state
   updateNode(nodeId, status, tradingLoss = null) {
-    
     this.nodeStates.set(nodeId, {
       status,
       timestamp: Date.now(),
@@ -67,7 +66,6 @@ class FlowChartEventEmitter {
       status,
       tradingLoss,
     });
-    
   }
 
   // Get node state
@@ -91,7 +89,7 @@ class FlowChartEventEmitter {
     if (this.isProcessing || this.updateQueue.length === 0) {
       return;
     }
-    
+
     this.isProcessing = true;
     try {
       while (this.updateQueue.length > 0) {
@@ -119,7 +117,9 @@ class FlowChartEventEmitter {
       case EVENT_TYPES.BATCH_UPDATE:
         for (const nodeUpdate of status) {
           if (!this.nodeStates.has(nodeUpdate.nodeId)) {
-            console.warn(`Node ${nodeUpdate.nodeId} not found in states, skipping batch update`);
+            console.warn(
+              `Node ${nodeUpdate.nodeId} not found in states, skipping batch update`,
+            );
             continue;
           }
           this.updateNode(
@@ -144,7 +144,6 @@ class FlowChartEventEmitter {
 
   // Clear all queues and states and initialize nodes
   async clearAll(nodeIds = []) {
-    
     // First clear everything
     this.updateQueue = [];
     this.isProcessing = false;
@@ -167,7 +166,7 @@ class FlowChartEventEmitter {
     }
 
     // Add a small delay to ensure all operations are complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   // Check if event emitter is ready

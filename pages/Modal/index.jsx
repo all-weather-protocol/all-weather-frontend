@@ -118,11 +118,11 @@ export default function PopUpModal({
     if (open && flowchartData?.nodes) {
       // Get all node IDs from the flowchart data
       const allNodeIds = flowchartData.nodes.map((node) => node.id);
-      
+
       // Clear and initialize all nodes
       flowChartEventEmitter.clearAll(allNodeIds).then(() => {
         // Add a small delay to ensure initialization is complete
-        return new Promise(resolve => setTimeout(resolve, 200));
+        return new Promise((resolve) => setTimeout(resolve, 200));
       });
     }
   }, [open, flowchartData]);
