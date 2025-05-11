@@ -218,6 +218,7 @@ const UserFlowNode = React.memo(({
 // Add display name for debugging
 UserFlowNode.displayName = 'UserFlowNode';
 
+// Define getGraphOptions as a regular function
 const getGraphOptions = (
   data,
   stepName,
@@ -279,13 +280,18 @@ export default function DemoFlowDirectionGraph({
   currentChain,
 }) {
   const [completedSteps, setCompletedSteps] = useState(new Set());
-  const options = getGraphOptions(
-    data,
-    stepName,
-    tradingLoss,
-    completedSteps,
-    setCompletedSteps,
-    currentChain,
+
+  // Memoize the options to prevent unnecessary recalculations
+  const options = useMemo(() => 
+    getGraphOptions(
+      data,
+      stepName,
+      tradingLoss,
+      completedSteps,
+      setCompletedSteps,
+      currentChain,
+    ),
+    [data, stepName, tradingLoss, completedSteps, currentChain]
   );
 
   return <FlowDirectionGraph {...options} />;
