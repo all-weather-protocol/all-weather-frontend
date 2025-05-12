@@ -231,12 +231,6 @@ export class BaseVelodrome extends BaseProtocol {
     );
 
     const min_mint_amount = await this._calculateMintLP(tokens[0], tokens[1]);
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      0,
-    );
-
     const approveTxns = tokens.map((token) =>
       approve(
         token.address,
@@ -298,7 +292,6 @@ export class BaseVelodrome extends BaseProtocol {
   }
 
   async _unstakeLP(owner, percentage, updateProgress) {
-    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
       BigInt(Math.floor(percentage * 10000)),
     );
@@ -320,14 +313,6 @@ export class BaseVelodrome extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawLPAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-
     const approveTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -368,11 +353,12 @@ export class BaseVelodrome extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
-
+    const tradingLoss = 0;
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
       this.customParams.lpTokens,
       [minAmount0, minAmount1],
+      tradingLoss,
     ];
   }
 

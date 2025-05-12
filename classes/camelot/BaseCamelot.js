@@ -237,16 +237,6 @@ export class BaseCamelot extends BaseProtocol {
         symbol,
       }),
     );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      0,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-stake`,
-      0,
-    );
     // Generate approve transactions
     const approveTxns = tokens.map((token) =>
       approve(
@@ -349,7 +339,6 @@ export class BaseCamelot extends BaseProtocol {
     return [];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
       BigInt(Math.floor(percentage * 10000)),
     );
@@ -367,13 +356,6 @@ export class BaseCamelot extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawLPAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     if (!this.token_id) {
       this.token_id = await this._getNftID(owner);
     }
@@ -390,11 +372,6 @@ export class BaseCamelot extends BaseProtocol {
     const amount1Min = this.mul_with_slippage_in_bignumber_format(
       amount1,
       slippage,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
     );
 
     const [claimTxns] = await this.customClaim(
@@ -420,8 +397,8 @@ export class BaseCamelot extends BaseProtocol {
     const transactions = amount.eq(liquidity)
       ? [withdrawTxn, ...claimTxns, burnTxn]
       : [withdrawTxn, ...claimTxns];
-
-    return [transactions, this.customParams.lpTokens, [amount0, amount1]];
+    const tradingLoss = 0;
+    return [transactions, this.customParams.lpTokens, [amount0, amount1], tradingLoss];
   }
 
   _prepareBurnTransaction() {

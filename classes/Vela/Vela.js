@@ -137,7 +137,6 @@ export class Vela extends BaseProtocol {
     return [approveAlpTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     const stakeFarmContractInstance = new ethers.Contract(
       this.stakeFarmContract.address,
       TokenFarm,
@@ -170,13 +169,6 @@ export class Vela extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      vlpAmount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     const [
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
@@ -201,12 +193,14 @@ export class Vela extends BaseProtocol {
       method: "unstake",
       params: [bestTokenAddressToZapOut, vlpAmount],
     });
+    const tradingLoss = 0;
     return [
       [approveVlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       minOutAmount,
+      tradingLoss,
     ];
   }
   async lockUpPeriod(address) {

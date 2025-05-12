@@ -209,7 +209,6 @@ export class BasePendlePT extends BaseProtocol {
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     // Convert percentage (0-1) to precise BigNumber with 18 decimals
     const percentagePrecision = 18;
     const percentageStr = percentage
@@ -229,13 +228,6 @@ export class BasePendlePT extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     const approvePendleTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -310,17 +302,14 @@ export class BasePendlePT extends BaseProtocol {
         Math.pow(10, this.assetDecimals);
       tradingLoss = outputValue - currentValue;
     }
-    this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      tradingLoss,
-    );
+
     return [
       [approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       zapOutResp.data.data.amountOut,
+      tradingLoss,
     ];
   }
 }

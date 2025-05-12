@@ -402,7 +402,6 @@ export class BaseEquilibria extends BaseProtocol {
     return [approveTxn, stakeTxn];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     // Convert percentage (0-1) to precise BigNumber with 18 decimals
     const percentageStr = percentage.toFixed(18).replace(".", "");
     const percentageBN = ethers.BigNumber.from(percentageStr);
@@ -436,13 +435,6 @@ export class BaseEquilibria extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     const approvePendleTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -486,17 +478,13 @@ export class BaseEquilibria extends BaseProtocol {
       latestPendleAssetPrice *
       Math.pow(10, this.assetDecimals);
     const tradingLoss = currentValue - outputValue;
-    this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      tradingLoss,
-    );
     return [
       [approvePendleTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       zapOutResp.data.contractCallParams[3].minTokenOut,
+      tradingLoss,
     ];
   }
 }

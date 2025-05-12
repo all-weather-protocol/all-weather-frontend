@@ -108,15 +108,9 @@ export class BaseConvex extends BaseProtocol {
 
     const depositTxn = this._createDepositTransaction(amounts, minMintAmount);
 
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      tradingLoss,
-    );
-
     const stakeTxns = await this._stakeLP(amounts, updateProgress);
 
-    return [[...approveTxns, depositTxn, ...stakeTxns], 0];
+    return [[...approveTxns, depositTxn, ...stakeTxns], tradingLoss];
   }
 
   async _prepareTokenApprovals(tokenPairs, updateProgress) {
@@ -255,7 +249,6 @@ export class BaseConvex extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
       BigInt(Math.floor(percentage * 10000)),
     );
@@ -276,14 +269,6 @@ export class BaseConvex extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawLPAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-
     const curvePoolInstance = new ethers.Contract(
       this.protocolContract.address,
       CurveStableSwapNG,
@@ -320,22 +305,17 @@ export class BaseConvex extends BaseProtocol {
       params: [amount, minPairAmounts],
     });
 
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
-
     const [claimTxns, _] = await this.customClaim(
       owner,
       tokenPricesMappingTable,
       updateProgress,
     );
-
+    const tradingLoss = 0;
     return [
       [withdrawTxn, ...claimTxns],
       this.customParams.lpTokens,
       minPairAmounts,
+      tradingLoss,
     ];
   }
   async lockUpPeriod() {

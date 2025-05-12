@@ -177,7 +177,6 @@ export class Venus extends BaseProtocol {
   }
 
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     const percentageStr = percentage
       .toFixed(this.percentagePrecision)
       .replace(".", "");
@@ -203,12 +202,6 @@ export class Venus extends BaseProtocol {
     updateProgress,
   ) {
     try {
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-withdraw`,
-        0,
-      );
-
       const protocolContractInstance = new ethers.Contract(
         this.protocolContract.address,
         Vault,
@@ -256,20 +249,6 @@ export class Venus extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
-
     const [
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapOut,
@@ -295,13 +274,14 @@ export class Venus extends BaseProtocol {
       method: "redeem",
       params: [amountToWithdraw],
     });
-
+    const tradingLoss = 0;
     return [
       [burnTxn],
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapOut,
       assetDecimals,
       amountToWithdraw,
+      tradingLoss,
     ];
   }
 }

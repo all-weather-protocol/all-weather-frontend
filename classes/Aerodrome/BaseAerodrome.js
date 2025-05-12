@@ -111,11 +111,6 @@ export class BaseAerodrome extends BaseProtocol {
       }),
     );
     const min_mint_amount = this._calculateMintLP(tokens[0], tokens[1]);
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-deposit`,
-      0,
-    );
     // Generate approve transactions
     const approveTxns = tokens.map((token) =>
       approve(
@@ -257,7 +252,6 @@ export class BaseAerodrome extends BaseProtocol {
     return [approveForStakingTxn, stakeTxn];
   }
   async _unstakeLP(owner, percentage, updateProgress) {
-    await super._unstakeLP(owner, percentage, updateProgress);
     const percentageBN = ethers.BigNumber.from(
       BigInt(Math.floor(percentage * 10000)),
     );
@@ -277,13 +271,6 @@ export class BaseAerodrome extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawLPAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
     const approveTxn = approve(
       this.assetContract.address,
       this.protocolContract.address,
@@ -297,11 +284,6 @@ export class BaseAerodrome extends BaseProtocol {
       amount,
       slippage,
       this.customParams.lpTokens,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
     );
     const withdrawTxn = prepareContractCall({
       contract: this.protocolContract,
@@ -322,10 +304,12 @@ export class BaseAerodrome extends BaseProtocol {
       tokenPricesMappingTable,
       updateProgress,
     );
+    const tradingLoss = 0;
     return [
       [approveTxn, withdrawTxn, ...claimTxns],
       this.customParams.lpTokens,
       [minAmount0, minAmount1],
+      tradingLoss,
     ];
   }
 

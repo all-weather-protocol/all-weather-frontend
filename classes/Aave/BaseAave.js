@@ -120,7 +120,6 @@ export class BaseAave extends BaseProtocol {
     return [];
   }
   async _unstake(owner, percentage, updateProgress) {
-    await super._unstake(owner, percentage, updateProgress);
     // Convert percentage (0-1) to precise BigNumber with 18 decimals
     const percentagePrecision = 18;
     const percentageStr = percentage
@@ -140,18 +139,6 @@ export class BaseAave extends BaseProtocol {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    await super._withdrawAndClaim(
-      owner,
-      amount,
-      slippage,
-      tokenPricesMappingTable,
-      updateProgress,
-    );
-    await this._updateProgressAndWait(
-      updateProgress,
-      `${this.uniqueId()}-withdraw`,
-      0,
-    );
     const [
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapInOut,
@@ -162,12 +149,14 @@ export class BaseAave extends BaseProtocol {
       method: "withdraw",
       params: [bestTokenAddressToZapInOut, amount, owner],
     });
+    const tradingLoss = 0;
     return [
       [burnTxn],
       symbolOfBestTokenToZapInOut,
       bestTokenAddressToZapInOut,
       assetDecimals,
       amount,
+      tradingLoss,
     ];
   }
 }
