@@ -614,6 +614,7 @@ export default class BaseProtocol extends BaseUniswap {
       let withdrawTxns = [];
       let redeemTxns = [];
       let withdrawTokenAndBalance = {};
+      console.log(this.uniqueId(),"inside zapOut", "mode", this.mode);
       if (this.mode === "single") {
         const [
           withdrawTxnsForSingle,
@@ -628,7 +629,7 @@ export default class BaseProtocol extends BaseUniswap {
           tokenPricesMappingTable,
           updateProgress,
         );
-        console.log("minOutAmount", minOutAmount);
+        console.log(this.uniqueId(), "minOutAmount", minOutAmount);
         const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
           await this._calculateWithdrawTokenAndBalance(
             recipient,
@@ -651,6 +652,7 @@ export default class BaseProtocol extends BaseUniswap {
             tokenPricesMappingTable,
             updateProgress,
           );
+        console.log(this.uniqueId(), "minPairAmounts", minPairAmounts);
         if (
           withdrawLPTxns === undefined &&
           tokenMetadatas === undefined &&
@@ -812,23 +814,27 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
+    console.log(this.uniqueId(),"inside customWithdrawAndClaim");
     await this._handleTransactionProgress(
       updateProgress,
       `${this.uniqueId()}-unstake`,
       0,
       "unstake",
     );
+    console.log("after unstake _handleTransactionProgress");
     const [unstakeTxns, unstakedAmount] = await this._unstake(
       owner,
       percentage,
       updateProgress,
     );
+    console.log("after unstake");
     await this._handleTransactionProgress(
       updateProgress,
       `${this.uniqueId()}-claim`,
       0,
       "claim",
     );
+    console.log("after claim _handleTransactionProgress");
     const [
       withdrawAndClaimTxns,
       symbolOfBestTokenToZapOut,
@@ -843,17 +849,20 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
+    console.log("after withdrawAndClaim");
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
       tradingLoss,
     );
+    console.log("after updateProgressAndWait");
+    console.log(this.uniqueId(),"inside minTokenOut", minTokenOut, ethers.BigNumber.isBigNumber(minTokenOut));
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
-      minTokenOut,
+      ethers.BigNumber.isBigNumber(minTokenOut) ? minTokenOut : ethers.BigNumber.from(BigInt(minTokenOut)),
     ];
   }
   async customWithdrawLPAndClaim(
@@ -897,10 +906,15 @@ export default class BaseProtocol extends BaseUniswap {
         `${this.uniqueId()}-withdraw`,
         tradingLoss,
       );
+    for (const minPairAmount of minPairAmounts) {
+      if (!ethers.BigNumber.isBigNumber(minPairAmount)) {
+        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] = ethers.BigNumber.from(BigInt(minPairAmount) );
+      }
+    }
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       tokenMetadatas,
-      minPairAmounts,
+      minPairAmounts
     ];
   }
 

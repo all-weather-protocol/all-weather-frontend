@@ -142,7 +142,10 @@ export const createTokenBalanceEntry = ({
     decimals,
     tokenPricesMappingTable,
   });
-
+  console.log("balance", balance);
+  console.log("balance", balance);
+  console.log("balance", balance);
+  console.log("balance", balance);
   // Validate USD value for non-zero balances
   if (!balance.isZero()) {
     assert(

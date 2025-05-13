@@ -67,41 +67,6 @@ export class YearnV3Vault extends BaseProtocol {
     });
     return [[approveForZapInTxn, depositTxn], 0];
   }
-  async customWithdrawAndClaim(
-    owner,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const assetContractInstance = new ethers.Contract(
-      this.assetContract.address,
-      YearnV3,
-      PROVIDER(this.chain),
-    );
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(Math.floor(percentage * 10000));
-
-    const balance = (await assetContractInstance.functions.balanceOf(owner))[0];
-    const amount = balance.mul(percentageBN).div(10000);
-    const withdrawTxn = prepareContractCall({
-      contract: this.assetContract,
-      method: "withdraw",
-      params: [amount, owner, owner],
-    });
-    const [
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-    ] = this._getTheBestTokenAddressToZapOut();
-    return [
-      [withdrawTxn],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      amount,
-    ];
-  }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }

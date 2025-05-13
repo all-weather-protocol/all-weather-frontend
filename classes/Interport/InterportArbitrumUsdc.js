@@ -71,51 +71,6 @@ export class InterportArbitrumUsdc extends BaseProtocol {
     });
     return [[approveForZapInTxn, depositTxn], 0];
   }
-  async customWithdrawAndClaim(
-    owner,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    const stakeFarmContractInstance = new ethers.Contract(
-      this.stakeFarmContract.address,
-      YearnV3,
-      PROVIDER(this.chain),
-    );
-    // Assuming 'percentage' is a float between 0 and 1
-    const percentageBN = ethers.BigNumber.from(
-      BigInt(Math.floor(percentage * 10000)),
-    );
-
-    const balance = (
-      await stakeFarmContractInstance.functions.userInfo(this.pid, owner)
-    )[0];
-    const amount = balance.mul(percentageBN).div(10000);
-    const unstakeTxn = prepareContractCall({
-      contract: this.stakeFarmContract,
-      method: "withdraw",
-      params: [this.pid, amount],
-    });
-    const withdrawTxn = prepareContractCall({
-      contract: this.assetContract,
-      method: "withdraw",
-      params: [amount],
-    });
-
-    const [
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-    ] = this._getTheBestTokenAddressToZapOut();
-    return [
-      [unstakeTxn, withdrawTxn],
-      symbolOfBestTokenToZapOut,
-      bestTokenAddressToZapOut,
-      decimalOfBestTokenToZapOut,
-      amount,
-    ];
-  }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {
     return [[], {}];
   }
