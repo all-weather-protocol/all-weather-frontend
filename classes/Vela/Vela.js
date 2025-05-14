@@ -162,7 +162,7 @@ export class Vela extends BaseProtocol {
     });
     return [[withdrawTxn], vlpAmount];
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     vlpAmount,
     slippage,

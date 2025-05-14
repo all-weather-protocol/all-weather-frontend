@@ -614,7 +614,6 @@ export default class BaseProtocol extends BaseUniswap {
       let withdrawTxns = [];
       let redeemTxns = [];
       let withdrawTokenAndBalance = {};
-      console.log(this.uniqueId(),"inside zapOut", "mode", this.mode);
       if (this.mode === "single") {
         const [
           withdrawTxnsForSingle,
@@ -622,7 +621,7 @@ export default class BaseProtocol extends BaseUniswap {
           bestTokenAddressToZapOut,
           decimalOfBestTokenToZapOut,
           minOutAmount,
-        ] = await this.customWithdrawAndClaim(
+        ] = await this.baseWithdrawAndClaim(
           recipient,
           percentage,
           slippage,
@@ -645,7 +644,7 @@ export default class BaseProtocol extends BaseUniswap {
         withdrawTokenAndBalance = withdrawTokenAndBalanceForSingle;
       } else if (this.mode === "LP") {
         const [withdrawLPTxns, tokenMetadatas, minPairAmounts] =
-          await this.customWithdrawLPAndClaim(
+          await this.baseWithdrawLPAndClaim(
             recipient,
             percentage,
             slippage,
@@ -807,7 +806,7 @@ export default class BaseProtocol extends BaseUniswap {
   ) {
     throw new Error("Method 'customDeposit()' must be implemented.", amount);
   }
-  async customWithdrawAndClaim(
+  async baseWithdrawAndClaim(
     owner,
     percentage,
     slippage,
@@ -842,21 +841,19 @@ export default class BaseProtocol extends BaseUniswap {
       decimalOfBestTokenToZapOut,
       minTokenOut,
       tradingLoss,
-    ] = await this._withdrawAndClaim(
+    ] = await this.customWithdrawAndClaim(
       owner,
       unstakedAmount,
       slippage,
       tokenPricesMappingTable,
       updateProgress,
     );
-    console.log("after withdrawAndClaim");
+    assert(typeof tradingLoss === "number", `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`);
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
       tradingLoss,
     );
-    console.log("after updateProgressAndWait");
-    console.log(this.uniqueId(),"inside minTokenOut", minTokenOut, ethers.BigNumber.isBigNumber(minTokenOut));
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       symbolOfBestTokenToZapOut,
@@ -865,7 +862,7 @@ export default class BaseProtocol extends BaseUniswap {
       ethers.BigNumber.isBigNumber(minTokenOut) ? minTokenOut : ethers.BigNumber.from(BigInt(minTokenOut)),
     ];
   }
-  async customWithdrawLPAndClaim(
+  async baseWithdrawLPAndClaim(
     owner,
     percentage,
     slippage,
@@ -894,21 +891,22 @@ export default class BaseProtocol extends BaseUniswap {
       "claim",
     );
     const [withdrawAndClaimTxns, tokenMetadatas, minPairAmounts, tradingLoss] =
-      await this._withdrawLPAndClaim(
+      await this.customWithdrawLPAndClaim(
         owner,
         unstakedAmount,
         slippage,
         tokenPricesMappingTable,
         updateProgress,
       );
-      await this._updateProgressAndWait(
-        updateProgress,
-        `${this.uniqueId()}-withdraw`,
-        tradingLoss,
-      );
+    assert(typeof tradingLoss === "number", `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`);
+    await this._updateProgressAndWait(
+      updateProgress,
+      `${this.uniqueId()}-withdraw`,
+      tradingLoss,
+    );
     for (const minPairAmount of minPairAmounts) {
       if (!ethers.BigNumber.isBigNumber(minPairAmount)) {
-        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] = ethers.BigNumber.from(BigInt(minPairAmount) );
+        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] = ethers.BigNumber.from(BigInt(minPairAmount));
       }
     }
     return [
@@ -1359,23 +1357,23 @@ export default class BaseProtocol extends BaseUniswap {
   async _unstakeLP(owner, percentage, updateProgress) {
     throw new Error("Method '_unstakeLP()' must be implemented.");
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     withdrawAmount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    throw new Error("Method '_withdrawAndClaim()' must be implemented.");
+    throw new Error("Method 'customWithdrawAndClaim()' must be implemented.");
   }
-  async _withdrawLPAndClaim(
+  async customWithdrawLPAndClaim(
     owner,
     amount,
     slippage,
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    throw new Error("Method '_withdrawLPAndClaim()' must be implemented.");
+    throw new Error("Method 'customWithdrawLPAndClaim()' must be implemented.");
   }
   async _calculateTokenAmountsForLP(
     usdAmount,

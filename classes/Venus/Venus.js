@@ -195,54 +195,6 @@ export class Venus extends BaseProtocol {
   }
 
   async customWithdrawAndClaim(
-    recipient,
-    percentage,
-    slippage,
-    tokenPricesMappingTable,
-    updateProgress,
-  ) {
-    try {
-      const protocolContractInstance = new ethers.Contract(
-        this.protocolContract.address,
-        Vault,
-        PROVIDER(this.chain),
-      );
-
-      const balance = await protocolContractInstance.balanceOf(recipient);
-      const percentageBN = ethers.utils.parseUnits(
-        percentage.toString(),
-        this.percentagePrecision,
-      );
-      const amountToWithdraw = balance
-        .mul(percentageBN)
-        .div(ethers.BigNumber.from(10).pow(this.percentagePrecision));
-
-      const redeemTxn = prepareContractCall({
-        contract: this.protocolContract,
-        method: "redeem",
-        params: [amountToWithdraw],
-      });
-
-      const [
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalsOfZapInOutToken,
-      ] = this._getTheBestTokenAddressToZapOut();
-
-      return [
-        [redeemTxn],
-        symbolOfBestTokenToZapOut,
-        bestTokenAddressToZapOut,
-        decimalsOfZapInOutToken,
-        amountToWithdraw,
-      ];
-    } catch (error) {
-      console.error("Error in customWithdrawAndClaim:", error);
-      throw error;
-    }
-  }
-
-  async _withdrawAndClaim(
     owner,
     amount,
     slippage,

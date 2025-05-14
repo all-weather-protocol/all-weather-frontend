@@ -349,7 +349,7 @@ export class BaseCamelot extends BaseProtocol {
     const amount = assetBalance.mul(percentageBN).div(10000);
     return [[], amount];
   }
-  async _withdrawLPAndClaim(
+  async customWithdrawLPAndClaim(
     owner,
     amount,
     slippage,

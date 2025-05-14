@@ -114,7 +114,7 @@ export class BaseApolloX extends BaseProtocol {
     const tradingLoss = -inputTokenUsdValue * this.hardcodedProtocolFee;
     return [[approveForZapInTxn, mintTxn], tradingLoss];
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     amount,
     slippage,
@@ -143,12 +143,14 @@ export class BaseApolloX extends BaseProtocol {
       method: "burnAlp", // <- this gets inferred from the contract
       params: [bestTokenAddressToZapOut, amount, minOutAmount, owner],
     });
+    const tradingLoss = -estimatedZapOutUsdValue * this.hardcodedProtocolFee;
     return [
       [approveAlpTxn, burnTxn],
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
       minOutAmount,
+      tradingLoss,
     ];
   }
   async customClaim(owner, tokenPricesMappingTable, updateProgress) {

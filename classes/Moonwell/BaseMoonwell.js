@@ -215,7 +215,7 @@ export class BaseMoonwell extends BaseProtocol {
       .div(ethers.BigNumber.from("10").pow(percentagePrecision));
     return [[], withdrawAmount];
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     amount,
     slippage,

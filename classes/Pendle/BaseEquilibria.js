@@ -428,7 +428,7 @@ export class BaseEquilibria extends BaseProtocol {
     });
     return [[approveEqbLPTxn, withdrawTxn], withdrawAmount];
   }
-  async _withdrawAndClaim(
+  async customWithdrawAndClaim(
     owner,
     amount,
     slippage,

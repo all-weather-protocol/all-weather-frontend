@@ -298,7 +298,7 @@ export class BaseAura extends BaseProtocol {
     });
     return [[unstakeTxn], amount];
   }
-  async _withdrawLPAndClaim(
+  async customWithdrawLPAndClaim(
     owner,
     amount,
     slippage,
