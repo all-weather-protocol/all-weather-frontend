@@ -398,7 +398,12 @@ export class BaseCamelot extends BaseProtocol {
       ? [withdrawTxn, ...claimTxns, burnTxn]
       : [withdrawTxn, ...claimTxns];
     const tradingLoss = 0;
-    return [transactions, this.customParams.lpTokens, [amount0, amount1], tradingLoss];
+    return [
+      transactions,
+      this.customParams.lpTokens,
+      [amount0, amount1],
+      tradingLoss,
+    ];
   }
 
   _prepareBurnTransaction() {

@@ -82,10 +82,7 @@ export const calculateUsdDenominatedValue = ({
   if (tokenPrice === undefined) {
     return 0;
   }
-  return (
-    tokenPrice *
-    Number(ethers.utils.formatUnits(balance, decimals))
-  );
+  return tokenPrice * Number(ethers.utils.formatUnits(balance, decimals));
 };
 
 /**
@@ -101,21 +98,24 @@ export const addPendingRewardsToBalance = (
   tokenPricesMappingTable,
 ) => {
   const updatedBalance = { ...withdrawTokenAndBalance };
-  
+
   for (const [address, metadata] of Object.entries(pendingRewards)) {
     if (updatedBalance[address]) {
-      updatedBalance[address].balance = updatedBalance[address].balance.add(metadata.balance);
-      updatedBalance[address].usdDenominatedValue = calculateUsdDenominatedValue({
-        symbol: metadata.symbol,
-        balance: updatedBalance[address].balance,
-        decimals: updatedBalance[address].decimals,
-        tokenPricesMappingTable,
-      });
+      updatedBalance[address].balance = updatedBalance[address].balance.add(
+        metadata.balance,
+      );
+      updatedBalance[address].usdDenominatedValue =
+        calculateUsdDenominatedValue({
+          symbol: metadata.symbol,
+          balance: updatedBalance[address].balance,
+          decimals: updatedBalance[address].decimals,
+          tokenPricesMappingTable,
+        });
     } else {
       updatedBalance[address] = metadata;
     }
   }
-  
+
   return updatedBalance;
 };
 
@@ -142,15 +142,11 @@ export const createTokenBalanceEntry = ({
     decimals,
     tokenPricesMappingTable,
   });
-  console.log("balance", balance);
-  console.log("balance", balance);
-  console.log("balance", balance);
-  console.log("balance", balance);
   // Validate USD value for non-zero balances
   if (!balance.isZero()) {
     assert(
       !isNaN(usdDenominatedValue) && usdDenominatedValue > 0,
-      `Invalid USD value for ${symbol}: ${usdDenominatedValue}`
+      `Invalid USD value for ${symbol}: ${usdDenominatedValue}`,
     );
   }
 

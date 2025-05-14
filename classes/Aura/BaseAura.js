@@ -223,7 +223,7 @@ export class BaseAura extends BaseProtocol {
     tokenPricesMappingTable,
   ) {
     const { maxAmountsIn } = await this._calculateMintLP({
-      rpcUrl: PROVIDER(this.chain).rpcUrl,
+      rpcUrl: PROVIDER(this.chain).connection.url,
       chainId: this.chainId,
       poolId: this.customParams.poolId,
       referenceAmount: {
@@ -306,7 +306,7 @@ export class BaseAura extends BaseProtocol {
     updateProgress,
   ) {
     const call = await this.removeLiquidity({
-      rpcUrl: PROVIDER(this.chain).rpcUrl,
+      rpcUrl: PROVIDER(this.chain).connection.url,
       chainId: this.chainId,
       owner,
       poolId: this.customParams.poolId,
@@ -400,7 +400,6 @@ export class BaseAura extends BaseProtocol {
     // API can be used to fetch relevant pool data
     const balancerApi = new BalancerApi("https://api-v3.balancer.fi/", chainId);
     const poolState = await balancerApi.pools.fetchPoolState(poolId);
-
     // Construct the RemoveLiquidityInput, in this case a RemoveLiquiditySingleTokenExactIn
     const bptIn = {
       rawAmount: BigInt(amount),

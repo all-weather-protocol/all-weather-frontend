@@ -242,8 +242,9 @@ export class BasePendlePT extends BaseProtocol {
     ] = this._getTheBestTokenAddressToZapOut();
     let burnTxn;
     let tradingLoss = 0;
+    let zapOutResp;
     if (await this.isExpired()) {
-      const zapOutResp = await axios.get(
+      zapOutResp = await axios.get(
         `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/redeem`,
         {
           params: {
@@ -265,7 +266,7 @@ export class BasePendlePT extends BaseProtocol {
       });
       tradingLoss = 0;
     } else {
-      const zapOutResp = await axios.get(
+      zapOutResp = await axios.get(
         `https://api-v2.pendle.finance/core/v1/sdk/${this.chainId}/markets/${this.customParams.marketAddress}/swap`,
         {
           params: {

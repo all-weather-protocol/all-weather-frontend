@@ -221,7 +221,7 @@ export default function IndexOverviews() {
     setPlatformFee(0);
     setTotalTradingLoss(0);
     setTradingLoss(0);
-
+    setErrorMsg("");
     const tokenSymbolAndAddress = selectedToken.toLowerCase();
 
     if (!tokenSymbolAndAddress) {
@@ -276,7 +276,6 @@ export default function IndexOverviews() {
 
     try {
       const txns = await generateIntentTxns(actionParams);
-      setErrorMsg("");
       setCostsCalculated(true);
 
       if (

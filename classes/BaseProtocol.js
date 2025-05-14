@@ -628,7 +628,6 @@ export default class BaseProtocol extends BaseUniswap {
           tokenPricesMappingTable,
           updateProgress,
         );
-        console.log(this.uniqueId(), "minOutAmount", minOutAmount);
         const [redeemTxnsForSingle, withdrawTokenAndBalanceForSingle] =
           await this._calculateWithdrawTokenAndBalance(
             recipient,
@@ -651,7 +650,6 @@ export default class BaseProtocol extends BaseUniswap {
             tokenPricesMappingTable,
             updateProgress,
           );
-        console.log(this.uniqueId(), "minPairAmounts", minPairAmounts);
         if (
           withdrawLPTxns === undefined &&
           tokenMetadatas === undefined &&
@@ -813,27 +811,23 @@ export default class BaseProtocol extends BaseUniswap {
     tokenPricesMappingTable,
     updateProgress,
   ) {
-    console.log(this.uniqueId(),"inside customWithdrawAndClaim");
     await this._handleTransactionProgress(
       updateProgress,
       `${this.uniqueId()}-unstake`,
       0,
       "unstake",
     );
-    console.log("after unstake _handleTransactionProgress");
     const [unstakeTxns, unstakedAmount] = await this._unstake(
       owner,
       percentage,
       updateProgress,
     );
-    console.log("after unstake");
     await this._handleTransactionProgress(
       updateProgress,
       `${this.uniqueId()}-claim`,
       0,
       "claim",
     );
-    console.log("after claim _handleTransactionProgress");
     const [
       withdrawAndClaimTxns,
       symbolOfBestTokenToZapOut,
@@ -848,7 +842,10 @@ export default class BaseProtocol extends BaseUniswap {
       tokenPricesMappingTable,
       updateProgress,
     );
-    assert(typeof tradingLoss === "number", `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`);
+    assert(
+      typeof tradingLoss === "number",
+      `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`,
+    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
@@ -859,7 +856,9 @@ export default class BaseProtocol extends BaseUniswap {
       symbolOfBestTokenToZapOut,
       bestTokenAddressToZapOut,
       decimalOfBestTokenToZapOut,
-      ethers.BigNumber.isBigNumber(minTokenOut) ? minTokenOut : ethers.BigNumber.from(BigInt(minTokenOut)),
+      ethers.BigNumber.isBigNumber(minTokenOut)
+        ? minTokenOut
+        : ethers.BigNumber.from(BigInt(minTokenOut)),
     ];
   }
   async baseWithdrawLPAndClaim(
@@ -898,7 +897,10 @@ export default class BaseProtocol extends BaseUniswap {
         tokenPricesMappingTable,
         updateProgress,
       );
-    assert(typeof tradingLoss === "number", `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`);
+    assert(
+      typeof tradingLoss === "number",
+      `${this.uniqueId()} tradingLoss is undefined or not a number ${tradingLoss}, typeof tradingLoss: ${typeof tradingLoss}`,
+    );
     await this._updateProgressAndWait(
       updateProgress,
       `${this.uniqueId()}-withdraw`,
@@ -906,13 +908,14 @@ export default class BaseProtocol extends BaseUniswap {
     );
     for (const minPairAmount of minPairAmounts) {
       if (!ethers.BigNumber.isBigNumber(minPairAmount)) {
-        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] = ethers.BigNumber.from(BigInt(minPairAmount));
+        minPairAmounts[minPairAmounts.indexOf(minPairAmount)] =
+          ethers.BigNumber.from(BigInt(minPairAmount));
       }
     }
     return [
       [...unstakeTxns, ...withdrawAndClaimTxns],
       tokenMetadatas,
-      minPairAmounts
+      minPairAmounts,
     ];
   }
 
@@ -1262,15 +1265,17 @@ export default class BaseProtocol extends BaseUniswap {
     updateProgress,
   ) {
     let withdrawTokenAndBalance = {};
-    
+
     // Create initial token balance entry
-    withdrawTokenAndBalance[bestTokenAddressToZapOut] = createTokenBalanceEntry({
-      address: bestTokenAddressToZapOut,
-      symbol: symbolOfBestTokenToZapOut,
-      balance: minOutAmount,
-      decimals: decimalOfBestTokenToZapOut,
-      tokenPricesMappingTable,
-    });
+    withdrawTokenAndBalance[bestTokenAddressToZapOut] = createTokenBalanceEntry(
+      {
+        address: bestTokenAddressToZapOut,
+        symbol: symbolOfBestTokenToZapOut,
+        balance: minOutAmount,
+        decimals: decimalOfBestTokenToZapOut,
+        tokenPricesMappingTable,
+      },
+    );
 
     // Get and add pending rewards
     const pendingRewards = await this.pendingRewards(
@@ -1310,18 +1315,19 @@ export default class BaseProtocol extends BaseUniswap {
         decimalOfBestTokenToZapOut,
       ] = tokenMetadata;
       const minOutAmount = minPairAmounts[index];
-      
+
       if (minOutAmount.toString() === "0" || minOutAmount === 0) {
         continue;
       }
 
-      withdrawTokenAndBalance[bestTokenAddressToZapOut] = createTokenBalanceEntry({
-        address: bestTokenAddressToZapOut,
-        symbol: symbolOfBestTokenToZapOut,
-        balance: minOutAmount,
-        decimals: decimalOfBestTokenToZapOut,
-        tokenPricesMappingTable,
-      });
+      withdrawTokenAndBalance[bestTokenAddressToZapOut] =
+        createTokenBalanceEntry({
+          address: bestTokenAddressToZapOut,
+          symbol: symbolOfBestTokenToZapOut,
+          balance: minOutAmount,
+          decimals: decimalOfBestTokenToZapOut,
+          tokenPricesMappingTable,
+        });
     }
 
     // Get and add pending rewards
