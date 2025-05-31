@@ -1,0 +1,1358 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_InCorrectValueTransfer",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_InsufficientExecutionFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_InsufficientRefund",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_InvalidSender",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_NoOrder",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_NotExecutionState",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_NotOrderOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_NotWNativeToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_NotWhitelisted",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ILiquidityHandler_Unauthorized",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isAdd",
+        "type": "bool"
+      }
+    ],
+    "name": "LogCancelLiquidityOrder",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenIn",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "executionFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint48",
+        "name": "createdTimestamp",
+        "type": "uint48"
+      }
+    ],
+    "name": "LogCreateAddLiquidityOrder",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tokenOut",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "executionFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isNativeOut",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint48",
+        "name": "createdTimestamp",
+        "type": "uint48"
+      }
+    ],
+    "name": "LogCreateRemoveLiquidityOrder",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isAdd",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "actualOut",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogExecuteLiquidityOrder",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isNativeOut",
+        "type": "bool"
+      }
+    ],
+    "name": "LogRefund",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldHlpStaking",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newHlpStaking",
+        "type": "address"
+      }
+    ],
+    "name": "LogSetHlpStaking",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldValue",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newValue",
+        "type": "address"
+      }
+    ],
+    "name": "LogSetLiquidityService",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldValue",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogSetMaxExecutionChunk",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldValue",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "LogSetMinExecutionFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "executor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "isAllow",
+        "type": "bool"
+      }
+    ],
+    "name": "LogSetOrderExecutor",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldPyth",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newPyth",
+        "type": "address"
+      }
+    ],
+    "name": "LogSetPyth",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "accountExecutedLiquidityOrders",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualAmountOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executionFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address payable",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint48",
+        "name": "createdTimestamp",
+        "type": "uint48"
+      },
+      {
+        "internalType": "uint48",
+        "name": "executedTimestamp",
+        "type": "uint48"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isAdd",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isNativeOut",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "cancelLiquidityOrder",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenIn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_executionFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_shouldWrap",
+        "type": "bool"
+      }
+    ],
+    "name": "createAddLiquidityOrder",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenIn",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_executionFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_shouldWrap",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "_isNotAutoStake",
+        "type": "bool"
+      }
+    ],
+    "name": "createAddLiquidityOrder",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenOut",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_executionFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_isNativeOut",
+        "type": "bool"
+      }
+    ],
+    "name": "createRemoveLiquidityOrder",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_orderId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "actualAmountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "uint48",
+            "name": "createdTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "executedTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "isAdd",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isNativeOut",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ILiquidityHandler.LiquidityOrder",
+        "name": "_order",
+        "type": "tuple"
+      }
+    ],
+    "name": "executeLiquidity",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_amountOut",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_endIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address payable",
+        "name": "_feeReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_priceData",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "_publishTimeData",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minPublishTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "_encodedVaas",
+        "type": "bytes32"
+      }
+    ],
+    "name": "executeOrder",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_limit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "getActiveLiquidityOrders",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "actualAmountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "uint48",
+            "name": "createdTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "executedTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "isAdd",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isNativeOut",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ILiquidityHandler.LiquidityOrder[]",
+        "name": "_liquidityOrders",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_limit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "getExecutedLiquidityOrders",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "actualAmountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "uint48",
+            "name": "createdTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "executedTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "isAdd",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isNativeOut",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ILiquidityHandler.LiquidityOrder[]",
+        "name": "_liquidityOrders",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLiquidityOrderLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLiquidityOrders",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "orderId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "actualAmountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "executionFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address payable",
+            "name": "account",
+            "type": "address"
+          },
+          {
+            "internalType": "uint48",
+            "name": "createdTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "executedTimestamp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "isAdd",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "isNativeOut",
+            "type": "bool"
+          },
+          {
+            "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct ILiquidityHandler.LiquidityOrder[]",
+        "name": "_liquidityOrders",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "hlpStaking",
+    "outputs": [
+      {
+        "internalType": "contract ISurgeStaking",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_liquidityService",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pyth",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_minExecutionOrderFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_maxExecutionChunk",
+        "type": "uint256"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "liquidityOrders",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "orderId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "actualAmountOut",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executionFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address payable",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "internalType": "uint48",
+        "name": "createdTimestamp",
+        "type": "uint48"
+      },
+      {
+        "internalType": "uint48",
+        "name": "executedTimestamp",
+        "type": "uint48"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "isAdd",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isNativeOut",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum ILiquidityHandler.LiquidityOrderStatus",
+        "name": "status",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "liquidityService",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "maxExecutionChunk",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minExecutionOrderFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextExecutionOrderIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "orderExecutors",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pyth",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_hlpStaking",
+        "type": "address"
+      }
+    ],
+    "name": "setHlpStaking",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_newLiquidityService",
+        "type": "address"
+      }
+    ],
+    "name": "setLiquidityService",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_maxExecutionChunk",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxExecutionChunk",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_newMinExecutionFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMinExecutionFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_executor",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "_isAllow",
+        "type": "bool"
+      }
+    ],
+    "name": "setOrderExecutor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_pyth",
+        "type": "address"
+      }
+    ],
+    "name": "setPyth",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
+  }
+]
