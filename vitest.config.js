@@ -6,6 +6,8 @@ import { configDefaults } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   test: {
+    forceExit: true,
+    reporters: ["default", "hanging-process"],
     setupFiles: ["./vitest.setup.js"],
     environment: "jsdom",
     coverage: {

@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import Image from "next/image";
 import ImageWithFallback from "../basicComponents/ImageWithFallback";
-import { Spin } from "antd";
 import flowChartEventEmitter from "../../utils/FlowChartEventEmitter";
 
 // Dynamically import FlowDirectionGraph with SSR disabled

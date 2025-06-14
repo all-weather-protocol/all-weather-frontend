@@ -61,7 +61,9 @@ export class BasePortfolio {
     throw new Error("Method 'denomination()' must be implemented.");
   }
   async lockUpPeriod(address) {
-    let maxLockUpPeriod = 0;
+    // Collect all protocol lockUpPeriod promises for parallel execution
+    const lockUpPromises = [];
+
     for (const protocolsInThisCategory of Object.values(this.strategy)) {
       for (const protocols of Object.values(protocolsInThisCategory)) {
         for (const protocol of protocols) {
@@ -71,12 +73,16 @@ export class BasePortfolio {
           if (typeof protocol.interface.lockUpPeriod !== "function") {
             throw new Error("Method 'lockUpPeriod()' must be implemented.");
           }
-          const lockUpPeriod = await protocol.interface.lockUpPeriod(address);
-          maxLockUpPeriod = Math.max(maxLockUpPeriod, lockUpPeriod);
+          lockUpPromises.push(protocol.interface.lockUpPeriod(address));
         }
       }
     }
-    return maxLockUpPeriod;
+
+    // Execute all lockUpPeriod calls in parallel
+    const lockUpPeriods = await Promise.all(lockUpPromises);
+
+    // Return the maximum lockUpPeriod
+    return Math.max(0, ...lockUpPeriods);
   }
   rebalanceThreshold() {
     return 0.01;
